@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#FAF3E7;font-family:'Nunito',system-ui,sans-serif;}
+a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
+@keyframes cfall{from{transform:translateY(-12vh) rotate(0deg);}to{transform:translateY(115vh) rotate(760deg);}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,16px);}to{opacity:1;transform:translate(-50%,0);}}
+@keyframes popIn{from{opacity:0;transform:scale(.85);}to{opacity:1;transform:scale(1);}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</helmet>
+
+<div data-screen-label="Заселение" style="min-height:100vh;font-family:'Nunito',system-ui,sans-serif;color:#33291C;padding-bottom:48px">
+
+  <!-- Page nav -->
+  <div style="display:flex;gap:8px;padding:20px 32px 0">
+    <a href="Рассадка по машинам.dc.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Машины</a>
+    <span style="font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:#33291C;color:#FAF3E7">Заселение</span>
+  </div>
+
+  <!-- Header -->
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px;padding:14px 32px 6px">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:12px;font-weight:800;letter-spacing:.22em;color:oklch(0.6 0.13 55)">AZIMUT Парк Отель Переславль</div>
+      <h1 style="margin:0;font-size:36px;font-weight:900;line-height:1.1">Заселение</h1>
+      <div style="font-size:14px;color:rgba(51,41,28,.6)">Перетаскивай участников по спальням. У каждой ночи — свой состав.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:8px 16px;box-shadow:0 2px 8px rgba(51,41,28,.08)">
+        <div style="width:110px;height:8px;border-radius:99px;background:rgba(0,0,0,.08);overflow:hidden">
+          <div style="height:100%;border-radius:99px;background:oklch(0.7 0.15 145);width:{{ progressPct }}%;transition:width .3s"></div>
+        </div>
+        <div style="font-size:13px;font-weight:800;white-space:nowrap">{{ assignedCount }} из {{ totalPeople }} заселены</div>
+      </div>
+      <sc-if value="{{ allSeated }}" hint-placeholder-val="{{ false }}">
+        <div style="background:oklch(0.7 0.15 145);color:#fff;font-weight:900;font-size:13px;padding:9px 16px;border-radius:999px;animation:popIn .4s ease">Все заселены!</div>
+      </sc-if>
+      <sc-if value="{{ online }}" hint-placeholder-val="{{ false }}">
+        <div title="Изменения видят все в реальном времени" style="display:flex;align-items:center;gap:7px;background:oklch(0.95 0.03 165);color:oklch(0.48 0.12 165);font-size:12px;font-weight:800;padding:9px 14px;border-radius:999px">
+          <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.65 0.15 165);box-shadow:0 0 0 3px oklch(0.88 0.08 165)"></span>Синхронизация
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- Day tabs -->
+  <div style="display:flex;gap:10px;padding:16px 32px 20px">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+      <button onClick="{{ t.onClick }}" style="font-family:inherit;display:flex;align-items:center;gap:10px;font-size:15px;font-weight:900;padding:12px 22px;border-radius:16px;border:2px solid {{ t.border }};background:{{ t.bg }};color:{{ t.fg }};cursor:pointer;transition:all .15s">
+        {{ t.label }}
+        <span style="font-size:12px;font-weight:800;padding:3px 10px;border-radius:99px;background:{{ t.pillBg }};color:{{ t.pillFg }}">{{ t.count }}/{{ t.total }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <!-- Board -->
+  <div style="display:grid;grid-template-columns:230px minmax(440px,1.25fr) minmax(320px,1fr);gap:18px;align-items:start;padding:0 32px;overflow-x:auto">
+
+    <!-- Unassigned -->
+    <div onDragOver="{{ allowDrop }}" onDrop="{{ onDropUnassigned }}" style="background:rgba(51,41,28,.05);border:2px dashed rgba(51,41,28,.18);border-radius:20px;padding:16px;min-height:320px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:900;letter-spacing:.04em">БЕЗ МЕСТА</div>
+        <div style="font-size:13px;font-weight:800;color:rgba(51,41,28,.5)">{{ unassignedCount }}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ unassigned }}" as="p" hint-placeholder-count="8">
+          <div draggable="{{ true }}" onDragStart="{{ p.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:9px;background:#fff;border-radius:999px;padding:6px 14px 6px 7px;box-shadow:0 2px 6px rgba(51,41,28,.1);cursor:grab;user-select:none" style-hover="box-shadow:0 4px 12px rgba(51,41,28,.18);transform:translateY(-1px)">
+            <svg width="28" height="28" viewBox="0 0 24 24" style="flex:none">
+              <circle cx="12" cy="8.6" r="5.8" fill="{{ p.colorSoft }}" fill-opacity="{{ p.hair }}"></circle>
+              <circle cx="12" cy="8.5" r="4.1" fill="{{ p.color }}"></circle>
+              <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ p.color }}"></path>
+            </svg>
+            <div style="font-size:14px;font-weight:800">{{ p.name }}</div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noneUnassigned }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;color:rgba(51,41,28,.45);text-align:center;padding:18px 6px">Все заселены!</div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- House card -->
+    <div style="background:#fff;border-radius:22px;box-shadow:0 4px 16px rgba(51,41,28,.08);overflow:hidden">
+      <div style="height:6px;background:oklch(0.65 0.14 150)"></div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="height:160px;border-radius:16px;overflow:hidden">
+          <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="house-photo" shape="rounded" radius="16" placeholder="Фото домика" hint-size="100%,160px"></x-import>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:19px;font-weight:900">Домик</div>
+          <div style="font-size:12px;font-weight:800;color:oklch(0.5 0.12 150);background:oklch(0.95 0.03 150);padding:3px 10px;border-radius:99px">{{ houseOccupied }} / {{ houseCap }}</div>
+        </div>
+
+        <!-- Bedrooms -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <sc-for list="{{ rooms }}" as="z" hint-placeholder-count="4">
+            <div onDragOver="{{ z.onDragOver }}" onDragLeave="{{ z.onDragLeave }}" onDrop="{{ z.onDrop }}" style="background:{{ z.accentSoft }};border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;outline:2px solid {{ z.outlineColor }};outline-offset:-2px;transition:outline-color .15s">
+              <div style="display:flex;align-items:baseline;justify-content:space-between">
+                <div style="font-size:13px;font-weight:900;color:{{ z.accent }}">{{ z.name }}</div>
+                <div style="font-size:12px;font-weight:900;color:{{ z.seatsColor }}">{{ z.occupied }}/{{ z.cap }}</div>
+              </div>
+              <sc-for list="{{ z.occupants }}" as="s" hint-placeholder-count="0">
+                <div draggable="{{ true }}" onDragStart="{{ s.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:5px 8px 5px 6px;cursor:grab;user-select:none;animation:popIn .25s ease" style-hover="box-shadow:0 3px 10px rgba(51,41,28,.15)">
+                  <svg width="24" height="24" viewBox="0 0 24 24" style="flex:none">
+                    <circle cx="12" cy="8.6" r="5.8" fill="{{ s.colorSoft }}" fill-opacity="{{ s.hair }}"></circle>
+                    <circle cx="12" cy="8.5" r="4.1" fill="{{ s.color }}"></circle>
+                    <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ s.color }}"></path>
+                  </svg>
+                  <div style="font-size:13px;font-weight:800">{{ s.name }}</div>
+                  <button onClick="{{ s.onRemove }}" title="Убрать" style="margin-left:auto;border:none;background:transparent;color:rgba(51,41,28,.35);font-size:15px;font-weight:900;cursor:pointer;padding:1px 6px;border-radius:99px;line-height:1" style-hover="color:oklch(0.55 0.18 25);background:rgba(0,0,0,.05)">×</button>
+                </div>
+              </sc-for>
+              <sc-for list="{{ z.emptySeats }}" as="e" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;justify-content:center;height:32px;border:2px dashed rgba(51,41,28,.15);border-radius:999px;font-size:11px;font-weight:700;color:rgba(51,41,28,.35)">койка свободна</div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- Couch -->
+        <div onDragOver="{{ couch.onDragOver }}" onDragLeave="{{ couch.onDragLeave }}" onDrop="{{ couch.onDrop }}" style="background:{{ couch.accentSoft }};border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;outline:2px solid {{ couch.outlineColor }};outline-offset:-2px;transition:outline-color .15s">
+          <div style="display:flex;align-items:baseline;justify-content:space-between">
+            <div style="font-size:13px;font-weight:900;color:{{ couch.accent }}">Диван в домике</div>
+            <div style="font-size:12px;font-weight:900;color:{{ couch.seatsColor }}">{{ couch.occupied }}/{{ couch.cap }}</div>
+          </div>
+          <sc-for list="{{ couch.occupants }}" as="s" hint-placeholder-count="0">
+            <div draggable="{{ true }}" onDragStart="{{ s.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:5px 8px 5px 6px;cursor:grab;user-select:none;animation:popIn .25s ease" style-hover="box-shadow:0 3px 10px rgba(51,41,28,.15)">
+              <svg width="24" height="24" viewBox="0 0 24 24" style="flex:none">
+                <circle cx="12" cy="8.6" r="5.8" fill="{{ s.colorSoft }}" fill-opacity="{{ s.hair }}"></circle>
+                <circle cx="12" cy="8.5" r="4.1" fill="{{ s.color }}"></circle>
+                <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ s.color }}"></path>
+              </svg>
+              <div style="font-size:13px;font-weight:800">{{ s.name }}</div>
+              <button onClick="{{ s.onRemove }}" title="Убрать" style="margin-left:auto;border:none;background:transparent;color:rgba(51,41,28,.35);font-size:15px;font-weight:900;cursor:pointer;padding:1px 6px;border-radius:99px;line-height:1" style-hover="color:oklch(0.55 0.18 25);background:rgba(0,0,0,.05)">×</button>
+            </div>
+          </sc-for>
+          <sc-for list="{{ couch.emptySeats }}" as="e" hint-placeholder-count="1">
+            <div style="display:flex;align-items:center;justify-content:center;height:32px;border:2px dashed rgba(51,41,28,.15);border-radius:999px;font-size:11px;font-weight:700;color:rgba(51,41,28,.35)">место на диване</div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hotel card -->
+    <div onDragOver="{{ hotel.onDragOver }}" onDragLeave="{{ hotel.onDragLeave }}" onDrop="{{ hotel.onDrop }}" style="background:#fff;border-radius:22px;box-shadow:0 4px 16px rgba(51,41,28,.08);overflow:hidden;outline:3px solid {{ hotel.outlineColor }};outline-offset:-3px;transition:outline-color .15s">
+      <div style="height:6px;background:oklch(0.6 0.13 275)"></div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="height:160px;border-radius:16px;overflow:hidden">
+          <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="hotel-photo" shape="rounded" radius="16" placeholder="Фото гостиницы" hint-size="100%,160px"></x-import>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:19px;font-weight:900">Гостиница</div>
+          <div style="font-size:12px;font-weight:800;color:oklch(0.5 0.12 275);background:oklch(0.95 0.03 275);padding:3px 10px;border-radius:99px">{{ hotel.occupied }} / {{ hotel.cap }}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <sc-for list="{{ hotel.occupants }}" as="s" hint-placeholder-count="0">
+            <div draggable="{{ true }}" onDragStart="{{ s.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:8px;background:oklch(0.96 0.02 275);border-radius:12px;padding:8px 9px;cursor:grab;user-select:none;animation:popIn .25s ease" style-hover="box-shadow:0 3px 10px rgba(51,41,28,.15)">
+              <svg width="24" height="24" viewBox="0 0 24 24" style="flex:none">
+                <circle cx="12" cy="8.6" r="5.8" fill="{{ s.colorSoft }}" fill-opacity="{{ s.hair }}"></circle>
+                <circle cx="12" cy="8.5" r="4.1" fill="{{ s.color }}"></circle>
+                <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ s.color }}"></path>
+              </svg>
+              <div style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.name }}</div>
+              <button onClick="{{ s.onRemove }}" title="Убрать" style="margin-left:auto;border:none;background:transparent;color:rgba(51,41,28,.35);font-size:15px;font-weight:900;cursor:pointer;padding:1px 6px;border-radius:99px;line-height:1" style-hover="color:oklch(0.55 0.18 25);background:rgba(0,0,0,.05)">×</button>
+            </div>
+          </sc-for>
+          <sc-for list="{{ hotel.emptySeats }}" as="e" hint-placeholder-count="12">
+            <div style="display:flex;align-items:center;justify-content:center;height:40px;border:2px dashed rgba(51,41,28,.15);border-radius:12px;font-size:11px;font-weight:700;color:rgba(51,41,28,.35)">свободно</div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:20px 32px 0;font-size:12.5px;color:rgba(51,41,28,.45);max-width:720px">У каждой ночи свой состав — переключай вкладки сверху. Всё сохраняется автоматически и синхронизируется у всех в реальном времени.</div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#33291C;color:#FAF3E7;font-size:14px;font-weight:800;padding:12px 22px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:toastIn .25s ease;z-index:60">{{ toast }}</div>
+  </sc-if>
+
+  <div style="position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50">
+    <sc-for list="{{ confetti }}" as="c" hint-placeholder-count="0">
+      <div style="position:absolute;top:-20px;left:{{ c.left }}%;width:{{ c.w }}px;height:{{ c.h }}px;background:{{ c.color }};border-radius:2px;animation:cfall {{ c.dur }}s linear {{ c.delay }}s forwards;opacity:.95"></div>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;confetti&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Поведение&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.KEY = 'zaselenie-v1';
+    this.DAYKEY = 'zaselenie-day';
+    this.FB = {
+      apiKey: "AIzaSyCN1Styvy48VaY8F_EmlX0LZBZhx8VRiXk",
+      authDomain: "tenniscamp-85e50.firebaseapp.com",
+      databaseURL: "https://tenniscamp-85e50-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "tenniscamp-85e50",
+      storageBucket: "tenniscamp-85e50.firebasestorage.app",
+      messagingSenderId: "1060313786887",
+      appId: "1:1060313786887:web:d883383ad625dab5bd18a2"
+    };
+    this.PEOPLE = [
+      { id: 'annaS',  name: 'Анна С',    f: true  },
+      { id: 'annaV',  name: 'Анна В',    f: true  },
+      { id: 'oleg',   name: 'Олег',      f: false },
+      { id: 'nik',    name: 'Николай',   f: false },
+      { id: 'kate',   name: 'Екатерина', f: true  },
+      { id: 'alexey', name: 'Алексей',   f: false },
+      { id: 'andrOr', name: 'Андрей Ор', f: false },
+      { id: 'andrOs', name: 'Андрей Ос', f: false },
+      { id: 'kostya', name: 'Константин', f: false },
+      { id: 'olga',   name: 'Ольга',     f: true  },
+      { id: 'artemS', name: 'Артем Ш',   f: false },
+      { id: 'artemY', name: 'Артем Ю',   f: false },
+      { id: 'ilya',   name: 'Илья',      f: false },
+      { id: 'sasha',  name: 'Александра', f: true  }
+    ];
+    this.ROOMS = [
+      { id: 'room1', name: 'Спальня 1', cap: 2, hue: 150 },
+      { id: 'room2', name: 'Спальня 2', cap: 2, hue: 195 },
+      { id: 'room3', name: 'Спальня 3', cap: 2, hue: 95  },
+      { id: 'room4', name: 'Спальня 4', cap: 2, hue: 35  }
+    ];
+    this.COUCH = { id: 'couch', name: 'Диван', cap: 1, hue: 55 };
+    this.HOTEL = { id: 'hotel', name: 'Гостиница', cap: 12, hue: 275 };
+    this.ZONES = this.ROOMS.concat([this.COUCH, this.HOTEL]);
+    this.DAYS = [
+      { id: 'sat', label: 'Сб → Вс' },
+      { id: 'sun', label: 'Вс → Пн' }
+    ];
+    let day = 'sat';
+    try { const d = localStorage.getItem(this.DAYKEY); if (d === 'sat' || d === 'sun') day = d; } catch (e) {}
+    this.state = Object.assign({ day, dragging: null, over: null, toast: null, confetti: [], online: false }, this.load());
+  }
+
+  emptyDay() {
+    const o = {}; this.ZONES.forEach(z => { o[z.id] = []; }); return o;
+  }
+  defaults() {
+    return { data: { sat: this.emptyDay(), sun: this.emptyDay() } };
+  }
+  normDay(obj) {
+    obj = obj || {};
+    const out = {}; const seen = new Set();
+    this.ZONES.forEach(z => {
+      const arr = (obj[z.id] || []).filter(pid => this.PEOPLE.some(p => p.id === pid) && !seen.has(pid)).slice(0, z.cap);
+      arr.forEach(pid => seen.add(pid));
+      out[z.id] = arr;
+    });
+    return out;
+  }
+  normalize(s) {
+    const d = (s && s.data) || {};
+    return { data: { sat: this.normDay(d.sat), sun: this.normDay(d.sun) } };
+  }
+
+  load() {
+    try {
+      const raw = localStorage.getItem(this.KEY);
+      if (raw) { const s = JSON.parse(raw); if (s && s.data) return this.normalize(s); }
+    } catch (e) {}
+    return this.defaults();
+  }
+  persist(next) {
+    const s = Object.assign({}, this.state, next);
+    const data = { data: s.data };
+    try { localStorage.setItem(this.KEY, JSON.stringify(data)); } catch (e) {}
+    if (this._db && !this._applyingRemote) { try { this._db.set(data); } catch (e) {} }
+  }
+
+  componentDidMount() {
+    this._onStorage = (e) => { if (e.key === this.KEY) this.setState(this.load()); };
+    window.addEventListener('storage', this._onStorage);
+    this.initFirebase();
+  }
+  componentWillUnmount() {
+    window.removeEventListener('storage', this._onStorage);
+    clearTimeout(this._toastT); clearTimeout(this._confT); clearTimeout(this._fbT);
+    if (this._db) { try { this._db.off(); } catch (e) {} }
+  }
+  initFirebase() {
+    if (!this.FB || !this.FB.databaseURL) return;
+    if (!(window.firebase && window.firebase.database)) { this._fbT = setTimeout(() => this.initFirebase(), 200); return; }
+    try {
+      const app = (window.firebase.apps && window.firebase.apps.length) ? window.firebase.app() : window.firebase.initializeApp(this.FB);
+      this._db = window.firebase.database(app).ref('boards/zaselenie-v1');
+      this._db.on('value', (snap) => {
+        const s = snap.val();
+        if (!s || !s.data) return;
+        const d = this.normalize(s);
+        this._applyingRemote = true;
+        this.setState(d, () => { this._applyingRemote = false; });
+        try { localStorage.setItem(this.KEY, JSON.stringify(d)); } catch (e) {}
+      });
+      this.setState({ online: true });
+    } catch (e) {}
+  }
+
+  selectDay(d) {
+    this.setState({ day: d });
+    try { localStorage.setItem(this.DAYKEY, d); } catch (e) {}
+  }
+
+  showToast(msg) {
+    clearTimeout(this._toastT);
+    this.setState({ toast: msg });
+    this._toastT = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+  fireConfetti() {
+    if ((this.props.confetti ?? true) === false) return;
+    const hues = [25, 55, 145, 195, 275, 310];
+    const pieces = [];
+    for (let i = 0; i < 130; i++) {
+      pieces.push({ left: Math.round(Math.random() * 100), w: 6 + Math.round(Math.random() * 7), h: 8 + Math.round(Math.random() * 8), color: 'oklch(0.72 0.17 ' + hues[i % hues.length] + ')', dur: (2.4 + Math.random() * 2).toFixed(2), delay: (Math.random() * 0.8).toFixed(2) });
+    }
+    clearTimeout(this._confT);
+    this.setState({ confetti: pieces });
+    this._confT = setTimeout(() => this.setState({ confetti: [] }), 5200);
+  }
+
+  dayAssignedCount(dayAssign) {
+    const s = new Set();
+    this.ZONES.forEach(z => (dayAssign[z.id] || []).forEach(pid => s.add(pid)));
+    return s.size;
+  }
+
+  move(pid, zoneId) {
+    const day = this.state.day;
+    const cur = this.state.data[day];
+    const wasFull = this.dayAssignedCount(cur) === this.PEOPLE.length;
+    const na = {};
+    this.ZONES.forEach(z => { na[z.id] = (cur[z.id] || []).filter(x => x !== pid); });
+    if (zoneId) {
+      const z = this.ZONES.find(z => z.id === zoneId);
+      if (na[zoneId].length >= z.cap) {
+        this.showToast('«' + z.name + '» уже заполнена');
+        this.setState({ over: null, dragging: null });
+        return;
+      }
+      na[zoneId] = na[zoneId].concat([pid]);
+    }
+    const data = Object.assign({}, this.state.data); data[day] = na;
+    this.setState({ data, over: null, dragging: null });
+    this.persist({ data });
+    const isFull = this.dayAssignedCount(na) === this.PEOPLE.length;
+    if (isFull && !wasFull) this.fireConfetti();
+  }
+
+  personVals(p) {
+    const idx = this.PEOPLE.indexOf(p);
+    const hue = (idx * 37 + 15) % 360;
+    return {
+      id: p.id, name: p.name,
+      color: 'oklch(0.6 0.12 ' + hue + ')',
+      colorSoft: 'oklch(0.82 0.07 ' + hue + ')',
+      hair: p.f ? 1 : 0,
+      onDragStart: (e) => { e.dataTransfer.setData('text/plain', p.id); e.dataTransfer.effectAllowed = 'move'; this.setState({ dragging: p.id }); }
+    };
+  }
+
+  zoneVals(z, dayAssign) {
+    const ids = dayAssign[z.id] || [];
+    const people = ids.map(pid => this.PEOPLE.find(p => p.id === pid)).filter(Boolean);
+    const occupants = people.map(p => Object.assign(this.personVals(p), { onRemove: () => this.move(p.id, null) }));
+    const emptySeats = [];
+    for (let i = people.length; i < z.cap; i++) emptySeats.push({ i });
+    return {
+      id: z.id, name: z.name, cap: z.cap, occupied: people.length, occupants, emptySeats,
+      full: people.length === z.cap,
+      accent: 'oklch(0.5 0.12 ' + z.hue + ')',
+      accentSoft: 'oklch(0.96 0.028 ' + z.hue + ')',
+      seatsColor: people.length === z.cap ? 'oklch(0.55 0.14 145)' : 'rgba(51,41,28,.5)',
+      outlineColor: this.state.over === z.id ? 'oklch(0.6 0.13 ' + z.hue + ')' : 'transparent',
+      onDragOver: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (this.state.over !== z.id) this.setState({ over: z.id }); },
+      onDragLeave: () => { if (this.state.over === z.id) this.setState({ over: null }); },
+      onDrop: (e) => { e.preventDefault(); const pid = e.dataTransfer.getData('text/plain') || this.state.dragging; if (pid) this.move(pid, z.id); }
+    };
+  }
+
+  renderVals() {
+    const day = this.state.day;
+    const cur = this.state.data[day];
+    const assignedIds = new Set();
+    this.ZONES.forEach(z => (cur[z.id] || []).forEach(pid => assignedIds.add(pid)));
+    const unassigned = this.PEOPLE.filter(p => !assignedIds.has(p.id)).map(p => this.personVals(p));
+
+    const rooms = this.ROOMS.map(z => this.zoneVals(z, cur));
+    const couch = this.zoneVals(this.COUCH, cur);
+    const hotel = this.zoneVals(this.HOTEL, cur);
+
+    const houseOccupied = rooms.reduce((n, r) => n + r.occupied, 0) + couch.occupied;
+    const houseCap = this.ROOMS.reduce((n, r) => n + r.cap, 0) + this.COUCH.cap;
+
+    const total = this.PEOPLE.length;
+    const assignedCount = assignedIds.size;
+
+    const tabs = this.DAYS.map(t => {
+      const active = this.state.day === t.id;
+      return {
+        id: t.id, label: t.label,
+        count: this.dayAssignedCount(this.state.data[t.id]), total,
+        active,
+        bg: active ? '#33291C' : '#fff',
+        fg: active ? '#FAF3E7' : '#33291C',
+        border: active ? '#33291C' : 'rgba(51,41,28,.15)',
+        pillBg: active ? 'rgba(250,243,231,.2)' : 'rgba(51,41,28,.08)',
+        pillFg: active ? '#FAF3E7' : 'rgba(51,41,28,.6)',
+        onClick: () => this.selectDay(t.id)
+      };
+    });
+
+    return {
+      tabs, unassigned, rooms, couch, hotel,
+      houseOccupied, houseCap,
+      unassignedCount: unassigned.length,
+      noneUnassigned: unassigned.length === 0,
+      assignedCount, totalPeople: total,
+      progressPct: Math.round(assignedCount / total * 100),
+      allSeated: assignedCount === total,
+      online: this.state.online,
+      toast: this.state.toast, confetti: this.state.confetti,
+      allowDrop: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; },
+      onDragEnd: () => this.setState({ dragging: null, over: null }),
+      onDropUnassigned: (e) => { e.preventDefault(); const pid = e.dataTransfer.getData('text/plain') || this.state.dragging; if (pid) this.move(pid, null); },
+      onReset: () => {
+        const label = this.DAYS.find(d => d.id === day).label;
+        if (!window.confirm('Сбросить заселение на ночь «' + label + '»?')) return;
+        const data = Object.assign({}, this.state.data); data[day] = this.emptyDay();
+        this.setState({ data }); this.persist({ data });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

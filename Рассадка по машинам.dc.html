@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#FAF3E7;font-family:'Nunito',system-ui,sans-serif;}
+a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
+@keyframes cfall{from{transform:translateY(-12vh) rotate(0deg);}to{transform:translateY(115vh) rotate(760deg);}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,16px);}to{opacity:1;transform:translate(-50%,0);}}
+@keyframes popIn{from{opacity:0;transform:scale(.85);}to{opacity:1;transform:scale(1);}}
+input[type=range].fuel{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:rgba(0,0,0,.08);outline:none;cursor:pointer;}
+input[type=range].fuel::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid currentColor;box-shadow:0 1px 4px rgba(0,0,0,.25);cursor:grab;}
+input[type=range].fuel::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid currentColor;box-shadow:0 1px 4px rgba(0,0,0,.25);cursor:grab;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</helmet>
+
+<div data-screen-label="Доска рассадки" style="min-height:100vh;font-family:'Nunito',system-ui,sans-serif;color:#33291C;padding-bottom:48px">
+
+  <!-- Page nav -->
+  <div style="display:flex;gap:8px;padding:20px 32px 0">
+    <span style="font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:#33291C;color:#FAF3E7">Машины</span>
+    <a href="Заселение.dc.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Заселение</a>
+  </div>
+
+  <!-- Header -->
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px;padding:32px 32px 22px">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:12px;font-weight:800;letter-spacing:.22em;color:oklch(0.6 0.13 55)">Поездка на теннисный кэмп · 4 экипажа</div>
+      <h1 style="margin:0;font-size:36px;font-weight:900;line-height:1.1">Рассадка по машинам</h1>
+      <div style="font-size:14px;color:rgba(51,41,28,.6)">Перетаскивай участников в машины. Всё сохраняется автоматически.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:8px 16px;box-shadow:0 2px 8px rgba(51,41,28,.08)">
+        <div style="width:110px;height:8px;border-radius:99px;background:rgba(0,0,0,.08);overflow:hidden">
+          <div style="height:100%;border-radius:99px;background:oklch(0.7 0.15 145);width:{{ progressPct }}%;transition:width .3s"></div>
+        </div>
+        <div style="font-size:13px;font-weight:800;white-space:nowrap">{{ assignedCount }} из {{ totalPeople }} расселись</div>
+      </div>
+      <sc-if value="{{ allSeated }}" hint-placeholder-val="{{ false }}">
+        <div style="background:oklch(0.7 0.15 145);color:#fff;font-weight:900;font-size:13px;padding:9px 16px;border-radius:999px;animation:popIn .4s ease">Все расселись!</div>
+      </sc-if>
+      <sc-if value="{{ online }}" hint-placeholder-val="{{ false }}">
+        <div title="Изменения видят все в реальном времени" style="display:flex;align-items:center;gap:7px;background:oklch(0.95 0.03 165);color:oklch(0.48 0.12 165);font-size:12px;font-weight:800;padding:9px 14px;border-radius:999px">
+          <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.65 0.15 165);box-shadow:0 0 0 3px oklch(0.88 0.08 165)"></span>Синхронизация
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- Direction tabs -->
+  <div style="display:flex;gap:10px;padding:4px 32px 20px">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+      <button onClick="{{ t.onClick }}" style="font-family:inherit;display:flex;align-items:center;gap:10px;font-size:15px;font-weight:900;padding:12px 22px;border-radius:16px;border:2px solid {{ t.border }};background:{{ t.bg }};color:{{ t.fg }};cursor:pointer;transition:all .15s">
+        {{ t.label }}
+        <span style="font-size:12px;font-weight:800;padding:3px 10px;border-radius:99px;background:{{ t.pillBg }};color:{{ t.pillFg }}">{{ t.count }}/{{ t.total }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <!-- Board -->
+  <div style="display:grid;grid-template-columns:250px repeat(4,minmax(270px,1fr));gap:16px;align-items:start;padding:0 32px;overflow-x:auto">
+
+    <!-- Unassigned column -->
+    <div onDragOver="{{ allowDrop }}" onDrop="{{ onDropUnassigned }}" style="background:rgba(51,41,28,.05);border:2px dashed rgba(51,41,28,.18);border-radius:20px;padding:16px;min-height:320px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:900;letter-spacing:.04em">НЕ РАСПРЕДЕЛЕНЫ</div>
+        <div style="font-size:13px;font-weight:800;color:rgba(51,41,28,.5)">{{ unassignedCount }}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ unassigned }}" as="p" hint-placeholder-count="6">
+          <div draggable="{{ true }}" onDragStart="{{ p.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:9px;background:#fff;border-radius:999px;padding:6px 14px 6px 7px;box-shadow:0 2px 6px rgba(51,41,28,.1);cursor:grab;user-select:none" style-hover="box-shadow:0 4px 12px rgba(51,41,28,.18);transform:translateY(-1px)">
+            <svg width="28" height="28" viewBox="0 0 24 24" style="flex:none">
+              <circle cx="12" cy="8.6" r="5.8" fill="{{ p.colorSoft }}" fill-opacity="{{ p.hair }}"></circle>
+              <circle cx="12" cy="8.5" r="4.1" fill="{{ p.color }}"></circle>
+              <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ p.color }}"></path>
+            </svg>
+            <div style="font-size:14px;font-weight:800">{{ p.name }}</div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noneUnassigned }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;color:rgba(51,41,28,.45);text-align:center;padding:18px 6px">Все по машинам!</div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- Car columns -->
+    <sc-for list="{{ cars }}" as="car" hint-placeholder-count="4">
+      <div onDragOver="{{ car.onDragOver }}" onDragLeave="{{ car.onDragLeave }}" onDrop="{{ car.onDrop }}" style="background:#fff;border-radius:20px;box-shadow:0 4px 16px rgba(51,41,28,.08);overflow:hidden;outline:3px solid {{ car.outline }};outline-offset:-3px;transition:outline-color .15s">
+        <div style="height:6px;background:{{ car.accent }}"></div>
+        <div style="padding:14px 16px 18px;display:flex;flex-direction:column;gap:13px">
+
+          <!-- Car image -->
+          <div style="height:120px;border-radius:14px;overflow:hidden">
+            <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="car-img-{{ car.id }}" shape="rounded" radius="14" placeholder="PNG: {{ car.name }}" hint-size="100%,120px"></x-import>
+          </div>
+
+          <!-- Title -->
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:16px;height:16px;border-radius:50%;background:{{ car.paint }};border:2px solid rgba(51,41,28,.15);flex:none"></div>
+            <div style="font-size:17px;font-weight:900;line-height:1.15">{{ car.name }}</div>
+            <div style="margin-left:auto;font-size:11px;font-weight:800;color:{{ car.accent }};background:{{ car.accentSoft }};padding:3px 8px;border-radius:99px;white-space:nowrap">{{ car.fuelType }}</div>
+          </div>
+
+          <!-- Driver -->
+          <div style="display:flex;align-items:center;gap:9px;background:{{ car.accentSoft }};border-radius:12px;padding:7px 12px">
+            <svg width="26" height="26" viewBox="0 0 24 24" style="flex:none">
+              <circle cx="12" cy="8.6" r="5.8" fill="rgba(51,41,28,.2)" fill-opacity="{{ car.driverHair }}"></circle>
+              <circle cx="12" cy="8.5" r="4.1" fill="{{ car.accent }}"></circle>
+              <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ car.accent }}"></path>
+            </svg>
+            <div style="display:flex;flex-direction:column">
+              <div style="font-size:10px;font-weight:900;letter-spacing:.14em;color:{{ car.accent }}">ЗА РУЛЁМ</div>
+              <div style="font-size:14px;font-weight:800">{{ car.driver }}</div>
+            </div>
+          </div>
+
+          <!-- Fuel -->
+          <sc-if value="{{ showFuel }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between">
+                <div style="font-size:11px;font-weight:900;letter-spacing:.1em;color:rgba(51,41,28,.45)">ЗАПАС ХОДА</div>
+                <div style="font-size:14px;font-weight:900;color:{{ car.fuelColor }}">≈ {{ car.fuelKm }} км</div>
+              </div>
+              <input type="range" class="fuel" min="0" max="100" value="{{ car.fuelPct }}" onChange="{{ car.onFuel }}" onInput="{{ car.onFuel }}" style="color:{{ car.fuelColor }}">
+              <div style="font-size:11px;color:rgba(51,41,28,.4)">полный бак — {{ car.range }} км</div>
+            </div>
+          </sc-if>
+
+          <!-- Seats -->
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <div style="font-size:11px;font-weight:900;letter-spacing:.1em;color:rgba(51,41,28,.45)">ПАССАЖИРЫ</div>
+              <div style="font-size:12px;font-weight:900;color:{{ car.seatsColor }}">{{ car.occupied }} / {{ car.cap }}</div>
+            </div>
+            <sc-for list="{{ car.occupants }}" as="seat" hint-placeholder-count="0">
+              <div draggable="{{ true }}" onDragStart="{{ seat.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:9px;background:#FAF3E7;border-radius:999px;padding:5px 8px 5px 6px;cursor:grab;user-select:none;animation:popIn .25s ease" style-hover="box-shadow:0 3px 10px rgba(51,41,28,.15)">
+                <svg width="26" height="26" viewBox="0 0 24 24" style="flex:none">
+                  <circle cx="12" cy="8.6" r="5.8" fill="{{ seat.colorSoft }}" fill-opacity="{{ seat.hair }}"></circle>
+                  <circle cx="12" cy="8.5" r="4.1" fill="{{ seat.color }}"></circle>
+                  <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ seat.color }}"></path>
+                </svg>
+                <div style="font-size:14px;font-weight:800">{{ seat.name }}</div>
+                <button onClick="{{ seat.onRemove }}" title="Убрать из машины" style="margin-left:auto;border:none;background:transparent;color:rgba(51,41,28,.35);font-size:16px;font-weight:900;cursor:pointer;padding:2px 8px;border-radius:99px;line-height:1" style-hover="color:oklch(0.55 0.18 25);background:rgba(0,0,0,.05)">×</button>
+              </div>
+            </sc-for>
+            <sc-for list="{{ car.emptySeats }}" as="slot" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;justify-content:center;height:36px;border:2px dashed rgba(51,41,28,.15);border-radius:999px;font-size:12px;font-weight:700;color:rgba(51,41,28,.35)">перетащи сюда</div>
+            </sc-for>
+          </div>
+
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="padding:20px 32px 0;font-size:12.5px;color:rgba(51,41,28,.45);max-width:720px">Рассадка сохраняется автоматически в этом браузере и синхронизируется между вкладками.</div>
+
+  <!-- Toast -->
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#33291C;color:#FAF3E7;font-size:14px;font-weight:800;padding:12px 22px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:toastIn .25s ease;z-index:60">{{ toast }}</div>
+  </sc-if>
+
+  <!-- Confetti -->
+  <div style="position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50">
+    <sc-for list="{{ confetti }}" as="c" hint-placeholder-count="0">
+      <div style="position:absolute;top:-20px;left:{{ c.left }}%;width:{{ c.w }}px;height:{{ c.h }}px;background:{{ c.color }};border-radius:2px;animation:cfall {{ c.dur }}s linear {{ c.delay }}s forwards;opacity:.95"></div>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;confetti&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Поведение&quot;},&quot;showFuel&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Поведение&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.KEY = 'car-board-v1';
+    this.CARS = [
+      { id: 'kaptur',  name: 'Рено Каптюр', paint: '#9AA0A6', colorName: 'серый',      driver: 'Артем Ю',   driverF: false, cap: 3, range: 700, fuelType: 'АИ-95', hue: 55  },
+      { id: 'rio',     name: 'Киа Рио',     paint: '#8D9298', colorName: 'серый',      driver: 'Константин', driverF: false, cap: 3, range: 700, fuelType: 'АИ-95', hue: 165 },
+      { id: 'sorento', name: 'Киа Соренто', paint: '#F4F3F0', colorName: 'белый',      driver: 'Андрей Ос', driverF: false, cap: 4, range: 700, fuelType: 'ДТ',    hue: 250 },
+      { id: 'volvo',   name: 'Вольво',      paint: '#6B4A32', colorName: 'коричневый', driver: 'Александра', driverF: true,  cap: 3, range: 700, fuelType: 'АИ-95', hue: 25  }
+    ];
+    this.PEOPLE = [
+      { id: 'annaS',  name: 'Анна С',    f: true  },
+      { id: 'annaV',  name: 'Анна В',    f: true  },
+      { id: 'oleg',   name: 'Олег',      f: false },
+      { id: 'nik',    name: 'Николай',   f: false },
+      { id: 'kate',   name: 'Екатерина', f: true  },
+      { id: 'alexey', name: 'Алексей',   f: false },
+      { id: 'andrOr', name: 'Андрей Ор', f: false },
+      { id: 'olga',   name: 'Ольга',     f: true  },
+      { id: 'artemS', name: 'Артем Ш',   f: false },
+      { id: 'ilya',   name: 'Илья',      f: false }
+    ];
+    this.DIRS = [
+      { id: 'there', label: 'Туда' },
+      { id: 'back',  label: 'Обратно' }
+    ];
+    this.DIRKEY = 'car-board-dir';
+    this.FB = {
+      apiKey: "AIzaSyCN1Styvy48VaY8F_EmlX0LZBZhx8VRiXk",
+      authDomain: "tenniscamp-85e50.firebaseapp.com",
+      databaseURL: "https://tenniscamp-85e50-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "tenniscamp-85e50",
+      storageBucket: "tenniscamp-85e50.firebasestorage.app",
+      messagingSenderId: "1060313786887",
+      appId: "1:1060313786887:web:d883383ad625dab5bd18a2"
+    };
+    let dir = 'there';
+    try { const d = localStorage.getItem(this.DIRKEY); if (d === 'there' || d === 'back') dir = d; } catch (e) {}
+    this.state = Object.assign({ dir, dragging: null, overCar: null, toast: null, confetti: [], online: false }, this.load());
+  }
+
+  emptyAssign() {
+    const a = {}; this.CARS.forEach(c => { a[c.id] = []; }); return a;
+  }
+  defaults() {
+    const fuel = {}; this.CARS.forEach(c => { fuel[c.id] = 100; });
+    return { assignByDir: { there: this.emptyAssign(), back: this.emptyAssign() }, fuel };
+  }
+  normDir(obj) {
+    obj = obj || {};
+    const a = {};
+    this.CARS.forEach(c => { a[c.id] = (obj[c.id] || []).filter(pid => this.PEOPLE.some(p => p.id === pid)).slice(0, c.cap); });
+    return a;
+  }
+  normalize(s) {
+    const fuel = {};
+    this.CARS.forEach(c => { const f = Number(s.fuel && s.fuel[c.id]); fuel[c.id] = isFinite(f) ? Math.max(0, Math.min(100, f)) : 100; });
+    let there, back;
+    if (s.assignByDir) { there = this.normDir(s.assignByDir.there); back = this.normDir(s.assignByDir.back); }
+    else { there = this.normDir(s.assign); back = this.emptyAssign(); }
+    return { assignByDir: { there, back }, fuel };
+  }
+
+  load() {
+    try {
+      const raw = localStorage.getItem(this.KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s && (s.assignByDir || s.assign)) return this.normalize(s);
+      }
+    } catch (e) {}
+    return this.defaults();
+  }
+
+  persist(next) {
+    const s = Object.assign({}, this.state, next);
+    const data = { assignByDir: s.assignByDir, fuel: s.fuel };
+    try { localStorage.setItem(this.KEY, JSON.stringify(data)); } catch (e) {}
+    if (this._db && !this._applyingRemote) {
+      try { this._db.set(data); } catch (e) {}
+    }
+  }
+
+  componentDidMount() {
+    this._onStorage = (e) => { if (e.key === this.KEY) this.setState(this.load()); };
+    window.addEventListener('storage', this._onStorage);
+    this.initFirebase();
+  }
+  componentWillUnmount() {
+    window.removeEventListener('storage', this._onStorage);
+    clearTimeout(this._toastT); clearTimeout(this._confT); clearTimeout(this._fbT);
+    if (this._db) { try { this._db.off(); } catch (e) {} }
+  }
+
+  initFirebase() {
+    if (!this.FB || !this.FB.databaseURL) return;
+    if (!(window.firebase && window.firebase.database)) {
+      this._fbT = setTimeout(() => this.initFirebase(), 200);
+      return;
+    }
+    try {
+      const app = (window.firebase.apps && window.firebase.apps.length) ? window.firebase.app() : window.firebase.initializeApp(this.FB);
+      this._db = window.firebase.database(app).ref('boards/rassadka-v1');
+      this._db.on('value', (snap) => {
+        const s = snap.val();
+        if (!s || !(s.assignByDir || s.assign)) return;
+        const d = this.normalize(s);
+        this._applyingRemote = true;
+        this.setState(d, () => { this._applyingRemote = false; });
+        try { localStorage.setItem(this.KEY, JSON.stringify(d)); } catch (e) {}
+      });
+      this.setState({ online: true });
+    } catch (e) {}
+  }
+
+  showToast(msg) {
+    clearTimeout(this._toastT);
+    this.setState({ toast: msg });
+    this._toastT = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+
+  fireConfetti() {
+    if ((this.props.confetti ?? true) === false) return;
+    const hues = [25, 55, 145, 165, 250, 310];
+    const pieces = [];
+    for (let i = 0; i < 130; i++) {
+      pieces.push({
+        left: Math.round(Math.random() * 100),
+        w: 6 + Math.round(Math.random() * 7),
+        h: 8 + Math.round(Math.random() * 8),
+        color: 'oklch(0.72 0.17 ' + hues[i % hues.length] + ')',
+        dur: (2.4 + Math.random() * 2).toFixed(2),
+        delay: (Math.random() * 0.8).toFixed(2)
+      });
+    }
+    clearTimeout(this._confT);
+    this.setState({ confetti: pieces });
+    this._confT = setTimeout(() => this.setState({ confetti: [] }), 5200);
+  }
+
+  curAssign() { return this.state.assignByDir[this.state.dir]; }
+  selectDir(dir) {
+    this.setState({ dir });
+    try { localStorage.setItem(this.DIRKEY, dir); } catch (e) {}
+  }
+  findCarOf(pid) {
+    const cur = this.curAssign();
+    for (const c of this.CARS) if (cur[c.id].includes(pid)) return c.id;
+    return null;
+  }
+
+  move(pid, targetCarId) {
+    const from = this.findCarOf(pid);
+    if (from === targetCarId) return;
+    const cur = this.curAssign();
+    const assign = {};
+    this.CARS.forEach(c => { assign[c.id] = cur[c.id].filter(x => x !== pid); });
+    if (targetCarId) {
+      const car = this.CARS.find(c => c.id === targetCarId);
+      if (assign[targetCarId].length >= car.cap) {
+        this.showToast('В машине «' + car.name + '» больше нет мест');
+        this.setState({ overCar: null, dragging: null });
+        return;
+      }
+      assign[targetCarId] = assign[targetCarId].concat([pid]);
+    }
+    const wasFull = this.CARS.reduce((n, c) => n + cur[c.id].length, 0) === this.PEOPLE.length;
+    const assignByDir = Object.assign({}, this.state.assignByDir); assignByDir[this.state.dir] = assign;
+    this.setState({ assignByDir, overCar: null, dragging: null });
+    this.persist({ assignByDir });
+    const seated = this.CARS.reduce((n, c) => n + assign[c.id].length, 0);
+    if (seated === this.PEOPLE.length && !wasFull) this.fireConfetti();
+  }
+
+  personVals(p) {
+    const idx = this.PEOPLE.indexOf(p);
+    const hue = (idx * 37 + 15) % 360;
+    return {
+      id: p.id, name: p.name,
+      color: 'oklch(0.6 0.12 ' + hue + ')',
+      colorSoft: 'oklch(0.82 0.07 ' + hue + ')',
+      hair: p.f ? 1 : 0,
+      onDragStart: (e) => {
+        e.dataTransfer.setData('text/plain', p.id);
+        e.dataTransfer.effectAllowed = 'move';
+        this.setState({ dragging: p.id });
+      }
+    };
+  }
+
+  renderVals() {
+    const fuel = this.state.fuel;
+    const overCar = this.state.overCar;
+    const toast = this.state.toast;
+    const confetti = this.state.confetti;
+    const assign = this.curAssign();
+    const assignedIds = new Set();
+    this.CARS.forEach(c => assign[c.id].forEach(pid => assignedIds.add(pid)));
+
+    const unassigned = this.PEOPLE.filter(p => !assignedIds.has(p.id)).map(p => this.personVals(p));
+
+    const cars = this.CARS.map(c => {
+      const people = assign[c.id].map(pid => this.PEOPLE.find(p => p.id === pid)).filter(Boolean);
+      const occupants = people.map(p => Object.assign(this.personVals(p), {
+        onRemove: () => this.move(p.id, null)
+      }));
+      const emptySeats = [];
+      for (let i = people.length; i < c.cap; i++) emptySeats.push({ i });
+      const pct = fuel[c.id];
+      const km = Math.round(c.range * pct / 100);
+      const fuelColor = pct > 50 ? 'oklch(0.6 0.15 145)' : pct > 25 ? 'oklch(0.65 0.15 70)' : 'oklch(0.55 0.18 25)';
+      return {
+        id: c.id, name: c.name, paint: c.paint, driver: c.driver,
+        driverHair: c.driverF ? 1 : 0,
+        cap: c.cap, occupied: people.length, occupants, emptySeats,
+        seatsColor: people.length === c.cap ? 'oklch(0.6 0.15 145)' : 'rgba(51,41,28,.55)',
+        range: c.range, fuelType: c.fuelType,
+        fuelPct: pct, fuelKm: km, fuelColor,
+        accent: 'oklch(0.62 0.13 ' + c.hue + ')',
+        accentSoft: 'oklch(0.95 0.035 ' + c.hue + ')',
+        outline: overCar === c.id ? 'oklch(0.62 0.13 ' + c.hue + ')' : 'transparent',
+        onFuel: (e) => {
+          const v = Math.max(0, Math.min(100, Number(e.target.value)));
+          const nf = Object.assign({}, this.state.fuel); nf[c.id] = v;
+          this.setState({ fuel: nf }); this.persist({ fuel: nf });
+        },
+        onDragOver: (e) => {
+          e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+          if (this.state.overCar !== c.id) this.setState({ overCar: c.id });
+        },
+        onDragLeave: () => { if (this.state.overCar === c.id) this.setState({ overCar: null }); },
+        onDrop: (e) => {
+          e.preventDefault();
+          const pid = e.dataTransfer.getData('text/plain') || this.state.dragging;
+          if (pid) this.move(pid, c.id);
+        }
+      };
+    });
+
+    const assignedCount = assignedIds.size;
+    const totalPeople = this.PEOPLE.length;
+
+    const tabs = this.DIRS.map(t => {
+      const active = this.state.dir === t.id;
+      const da = this.state.assignByDir[t.id];
+      const cnt = this.CARS.reduce((n, c) => n + da[c.id].length, 0);
+      return {
+        id: t.id, label: t.label, count: cnt, total: totalPeople, active,
+        bg: active ? '#33291C' : '#fff',
+        fg: active ? '#FAF3E7' : '#33291C',
+        border: active ? '#33291C' : 'rgba(51,41,28,.15)',
+        pillBg: active ? 'rgba(250,243,231,.2)' : 'rgba(51,41,28,.08)',
+        pillFg: active ? '#FAF3E7' : 'rgba(51,41,28,.6)',
+        onClick: () => this.selectDir(t.id)
+      };
+    });
+
+    return {
+      tabs, cars, unassigned,
+      unassignedCount: unassigned.length,
+      noneUnassigned: unassigned.length === 0,
+      assignedCount, totalPeople,
+      progressPct: Math.round(assignedCount / totalPeople * 100),
+      allSeated: assignedCount === totalPeople,
+      showFuel: (this.props.showFuel ?? true),
+      online: this.state.online,
+      toast, confetti,
+      allowDrop: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; },
+      onDragEnd: () => this.setState({ dragging: null, overCar: null }),
+      onDropUnassigned: (e) => {
+        e.preventDefault();
+        const pid = e.dataTransfer.getData('text/plain') || this.state.dragging;
+        if (pid) this.move(pid, null);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
