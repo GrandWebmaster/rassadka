@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#FAF3E7;font-family:'Nunito',system-ui,sans-serif;}
+a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,16px);}to{opacity:1;transform:translate(-50%,0);}}
+@keyframes popIn{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:scale(1);}}
+@media (max-width:900px){[data-top]{grid-template-columns:1fr!important}[data-match]{grid-template-columns:88px 1fr!important}[data-bcol]{border-left:none!important}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</helmet>
+
+<div data-screen-label="Игры" style="min-height:100vh;max-width:1400px;margin:0 auto;font-family:'Nunito',system-ui,sans-serif;color:#33291C;padding-bottom:48px">
+
+  <!-- Page nav -->
+  <div style="display:flex;flex-wrap:wrap;gap:8px;padding:20px 32px 0">
+    <a href="index.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Главная</a>
+    <a href="car.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Машины</a>
+    <a href="hotel.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Заселение</a>
+    <a href="teams.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Команды</a>
+    <span style="font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:#33291C;color:#FAF3E7">Игры</span>
+  </div>
+
+  <!-- Header -->
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px;padding:18px 32px 14px">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:12px;font-weight:800;letter-spacing:.22em;color:oklch(0.6 0.13 55)">РАСПИСАНИЕ ТУРНИРА · 23 МАТЧА</div>
+      <h1 style="margin:0;font-size:36px;font-weight:900;line-height:1.1">Игры</h1>
+      <div style="font-size:14px;color:rgba(51,41,28,.6)">Посади игроков в слоты команд — имена подставятся во все их матчи. Дев = девушка, Пар = парень.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:8px 16px;box-shadow:0 2px 8px rgba(51,41,28,.08)">
+        <div style="width:110px;height:8px;border-radius:99px;background:rgba(0,0,0,.08);overflow:hidden">
+          <div style="height:100%;border-radius:99px;background:oklch(0.7 0.15 145);width:{{ progressPct }}%;transition:width .3s"></div>
+        </div>
+        <div style="font-size:13px;font-weight:800;white-space:nowrap">{{ assignedCount }} из {{ totalSlots }} слотов заполнено</div>
+      </div>
+      <sc-if value="{{ online }}" hint-placeholder-val="{{ false }}">
+        <div title="Изменения видят все в реальном времени" style="display:flex;align-items:center;gap:7px;background:oklch(0.95 0.03 165);color:oklch(0.48 0.12 165);font-size:12px;font-weight:800;padding:9px 14px;border-radius:999px">
+          <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.65 0.15 165);box-shadow:0 0 0 3px oklch(0.88 0.08 165)"></span>Синхронизация
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- Top: pool + rosters -->
+  <div data-top style="display:grid;grid-template-columns:250px 1fr 1fr;gap:16px;align-items:start;padding:6px 32px 8px">
+
+    <!-- Pool -->
+    <div onDragOver="{{ allowDrop }}" onDrop="{{ onDropPool }}" style="background:rgba(51,41,28,.05);border:2px dashed rgba(51,41,28,.18);border-radius:20px;padding:14px;min-height:200px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:900;letter-spacing:.04em">УЧАСТНИКИ</div>
+        <div style="font-size:13px;font-weight:800;color:rgba(51,41,28,.5)">{{ poolCount }}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <sc-for list="{{ pool }}" as="p" hint-placeholder-count="14">
+          <div draggable="{{ true }}" onDragStart="{{ p.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:9px;background:#fff;border-radius:999px;padding:5px 13px 5px 6px;box-shadow:0 2px 6px rgba(51,41,28,.1);cursor:grab;user-select:none" style-hover="box-shadow:0 4px 12px rgba(51,41,28,.18);transform:translateY(-1px)">
+            <svg width="26" height="26" viewBox="0 0 24 24" style="flex:none">
+              <circle cx="12" cy="8.6" r="5.8" fill="{{ p.colorSoft }}" fill-opacity="{{ p.hair }}"></circle>
+              <circle cx="12" cy="8.5" r="4.1" fill="{{ p.color }}"></circle>
+              <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ p.color }}"></path>
+            </svg>
+            <div style="font-size:13.5px;font-weight:800">{{ p.name }}</div>
+            <div style="margin-left:auto;font-size:10px;font-weight:900;min-width:18px;text-align:center;color:#fff;background:{{ p.tagColor }};padding:2px 7px;border-radius:99px">{{ p.tag }}</div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ poolEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;color:rgba(51,41,28,.45);text-align:center;padding:14px 6px">Все в слотах!</div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- Team rosters -->
+    <sc-for list="{{ rosters }}" as="team" hint-placeholder-count="2">
+      <div style="background:#fff;border-radius:20px;box-shadow:0 4px 16px rgba(51,41,28,.08);overflow:hidden">
+        <div style="height:6px;background:{{ team.accent }}"></div>
+        <div style="padding:14px 16px 16px">
+          <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">
+            <div style="width:12px;height:12px;border-radius:50%;background:{{ team.accent }}"></div>
+            <div style="font-size:17px;font-weight:900">{{ team.name }}</div>
+            <div style="margin-left:auto;font-size:12px;font-weight:800;color:{{ team.accent }};background:{{ team.accentSoft }};padding:3px 10px;border-radius:99px">{{ team.filled }}/{{ team.total }}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <sc-for list="{{ team.slots }}" as="s" hint-placeholder-count="7">
+              <div onDragOver="{{ s.onDragOver }}" onDragLeave="{{ s.onDragLeave }}" onDrop="{{ s.onDrop }}" style="display:flex;align-items:center;gap:8px;background:{{ s.bg }};border-radius:12px;padding:6px 8px;min-height:42px;outline:2px solid {{ s.outline }};outline-offset:-2px;transition:outline-color .12s,background .12s">
+                <div style="font-size:10px;font-weight:900;letter-spacing:.02em;color:{{ s.labelColor }};width:34px;flex:none">{{ s.label }}</div>
+                <sc-if value="{{ s.filled }}" hint-placeholder-val="{{ false }}">
+                  <div draggable="{{ true }}" onDragStart="{{ s.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;cursor:grab;user-select:none">
+                    <svg width="22" height="22" viewBox="0 0 24 24" style="flex:none">
+                      <circle cx="12" cy="8.6" r="5.8" fill="{{ s.colorSoft }}" fill-opacity="{{ s.hair }}"></circle>
+                      <circle cx="12" cy="8.5" r="4.1" fill="{{ s.color }}"></circle>
+                      <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ s.color }}"></path>
+                    </svg>
+                    <div style="font-size:12.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.name }}</div>
+                    <button onClick="{{ s.onRemove }}" title="Убрать" style="margin-left:auto;border:none;background:transparent;color:rgba(51,41,28,.3);font-size:14px;font-weight:900;cursor:pointer;padding:0 4px;line-height:1;flex:none" style-hover="color:oklch(0.55 0.18 25)">×</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ s.empty }}" hint-placeholder-val="{{ true }}">
+                  <div style="flex:1;font-size:11px;font-weight:700;color:rgba(51,41,28,.3)">{{ s.hint }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- Filter -->
+  <div style="padding:14px 32px 6px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-size:12px;font-weight:900;letter-spacing:.12em;color:rgba(51,41,28,.45)">ФИЛЬТР ПО ИГРОКУ</div>
+      <sc-for list="{{ filterChips }}" as="f" hint-placeholder-count="0">
+        <button onClick="{{ f.onClick }}" style="font-family:inherit;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;padding:5px 12px 5px 6px;border-radius:999px;border:2px solid {{ f.border }};background:{{ f.bg }};color:{{ f.fg }};cursor:pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" style="flex:none">
+            <circle cx="12" cy="8.6" r="5.8" fill="{{ f.colorSoft }}" fill-opacity="{{ f.hair }}"></circle>
+            <circle cx="12" cy="8.5" r="4.1" fill="{{ f.color }}"></circle>
+            <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ f.color }}"></path>
+          </svg>
+          {{ f.name }}
+        </button>
+      </sc-for>
+      <sc-if value="{{ hasFilter }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ clearFilter }}" style="font-family:inherit;font-size:12.5px;font-weight:800;padding:6px 14px;border-radius:999px;border:none;background:#33291C;color:#FAF3E7;cursor:pointer">Показать все</button>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- Schedule -->
+  <div style="padding:8px 32px 0;display:flex;flex-direction:column;gap:22px">
+    <sc-for list="{{ sports }}" as="sp" hint-placeholder-count="4">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:10px;height:10px;border-radius:50%;background:{{ sp.accent }}"></div>
+          <div style="font-size:19px;font-weight:900">{{ sp.name }}</div>
+          <div style="font-size:13px;font-weight:700;color:rgba(51,41,28,.5)">{{ sp.meta }}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ sp.matches }}" as="m" hint-placeholder-count="6">
+            <div data-match style="display:grid;grid-template-columns:120px 1fr 1fr;gap:0;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(51,41,28,.07);opacity:{{ m.opacity }};outline:2px solid {{ m.outline }};outline-offset:-2px;transition:opacity .15s">
+              <div style="display:flex;flex-direction:column;justify-content:center;gap:2px;padding:12px 14px;background:{{ sp.accentSoft }}">
+                <div style="font-size:13px;font-weight:900;color:{{ sp.accent }}">{{ m.time }}</div>
+                <sc-if value="{{ m.fmt }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:10px;font-weight:800;letter-spacing:.06em;color:rgba(51,41,28,.45)">{{ m.fmt }}</div>
+                </sc-if>
+              </div>
+              <div style="padding:10px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+                <sc-for list="{{ m.aCells }}" as="c" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:6px;background:{{ c.bg }};border-radius:999px;padding:4px 11px 4px 5px;outline:2px solid {{ c.ring }};outline-offset:-2px">
+                    <svg width="20" height="20" viewBox="0 0 24 24" style="flex:none">
+                      <circle cx="12" cy="8.6" r="5.8" fill="{{ c.colorSoft }}" fill-opacity="{{ c.hair }}"></circle>
+                      <circle cx="12" cy="8.5" r="4.1" fill="{{ c.color }}"></circle>
+                      <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ c.color }}"></path>
+                    </svg>
+                    <span style="font-size:13px;font-weight:800;color:{{ c.textColor }}">{{ c.text }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div data-bcol style="padding:10px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;border-left:1px solid rgba(51,41,28,.08)">
+                <sc-for list="{{ m.bCells }}" as="c" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:6px;background:{{ c.bg }};border-radius:999px;padding:4px 11px 4px 5px;outline:2px solid {{ c.ring }};outline-offset:-2px">
+                    <svg width="20" height="20" viewBox="0 0 24 24" style="flex:none">
+                      <circle cx="12" cy="8.6" r="5.8" fill="{{ c.colorSoft }}" fill-opacity="{{ c.hair }}"></circle>
+                      <circle cx="12" cy="8.5" r="4.1" fill="{{ c.color }}"></circle>
+                      <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ c.color }}"></path>
+                    </svg>
+                    <span style="font-size:13px;font-weight:800;color:{{ c.textColor }}">{{ c.text }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="padding:20px 32px 0;font-size:12.5px;color:rgba(51,41,28,.45);max-width:720px">Заполни слоты обеих команд — расписание подставит имена автоматически. Всё сохраняется и синхронизируется у всех в реальном времени.</div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#33291C;color:#FAF3E7;font-size:14px;font-weight:800;padding:12px 22px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:toastIn .25s ease;z-index:60">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.KEY = 'games-v1';
+    this.FB = {
+      apiKey: "AIzaSyCN1Styvy48VaY8F_EmlX0LZBZhx8VRiXk",
+      authDomain: "tenniscamp-85e50.firebaseapp.com",
+      databaseURL: "https://tenniscamp-85e50-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "tenniscamp-85e50",
+      storageBucket: "tenniscamp-85e50.firebasestorage.app",
+      messagingSenderId: "1060313786887",
+      appId: "1:1060313786887:web:d883383ad625dab5bd18a2"
+    };
+    this.PLAYERS = [
+      { id: 'annaS',  name: 'Анна С',    f: true  },
+      { id: 'annaV',  name: 'Анна В',    f: true  },
+      { id: 'oleg',   name: 'Олег',      f: false },
+      { id: 'nik',    name: 'Николай',   f: false },
+      { id: 'kate',   name: 'Екатерина', f: true  },
+      { id: 'alexey', name: 'Алексей',   f: false },
+      { id: 'andrOr', name: 'Андрей Ор', f: false },
+      { id: 'andrOs', name: 'Андрей Ос', f: false },
+      { id: 'kostya', name: 'Константин', f: false },
+      { id: 'olga',   name: 'Ольга',     f: true  },
+      { id: 'artemS', name: 'Артем Ш',   f: false },
+      { id: 'artemY', name: 'Артем Ю',   f: false },
+      { id: 'ilya',   name: 'Илья',      f: false },
+      { id: 'sasha',  name: 'Александра', f: true  }
+    ];
+    this.TEAMS = [
+      { id: 'A', name: 'Команда А', hue: 25,  slots: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7'] },
+      { id: 'B', name: 'Команда Б', hue: 255, slots: ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7'] }
+    ];
+    this.SPORTS = [
+      { id: 'big', name: 'Большой теннис', hue: 145, meta: '6 матчей · 10:00–13:50', matches: [
+        { time: '10:00–10:30', fmt: 'одиночка', a: ['Пар3'], b: ['Дев2'] },
+        { time: '10:40–11:10', fmt: 'пара', a: ['Дев2', 'Дев3'], b: ['Дев1', 'Пар2'] },
+        { time: '11:20–11:50', fmt: 'одиночка', a: ['Пар1'], b: ['Пар1'] },
+        { time: '12:00–12:30', fmt: 'пара', a: ['Дев1', 'Дев3'], b: ['Пар2', 'Пар4'] },
+        { time: '12:40–13:10', fmt: 'одиночка', a: ['Пар2'], b: ['Пар3'] },
+        { time: '13:20–13:50', fmt: 'пара', a: ['Дев2', 'Пар4'], b: ['Пар3', 'Пар5'] }
+      ]},
+      { id: 'padel', name: 'Падел', hue: 250, meta: '5 матчей · 10:10–13:40', matches: [
+        { time: '10:10–10:40', a: ['Дев1', 'Пар2'], b: ['Пар4', 'Пар5'] },
+        { time: '10:55–11:25', a: ['Пар2', 'Пар4'], b: ['Пар3', 'Пар4'] },
+        { time: '11:40–12:10', a: ['Пар3', 'Пар4'], b: ['Дев2', 'Пар5'] },
+        { time: '12:25–12:55', a: ['Дев2', 'Пар1'], b: ['Дев1', 'Дев2'] },
+        { time: '13:10–13:40', a: ['Дев3', 'Пар1'], b: ['Пар1', 'Пар2'] }
+      ]},
+      { id: 'beach', name: 'Пляжный', hue: 45, meta: '4 матча · 10:40–13:55', matches: [
+        { time: '10:40–11:00', a: ['Пар1', 'Пар3'], b: ['Дев2', 'Пар1'] },
+        { time: '11:40–12:00', a: ['Дев2', 'Пар2'], b: ['Дев1', 'Пар3'] },
+        { time: '12:40–13:00', a: ['Дев3', 'Пар4'], b: ['Пар2', 'Пар5'] },
+        { time: '13:35–13:55', a: ['Дев1', 'Пар3'], b: ['Дев1', 'Пар4'] }
+      ]},
+      { id: 'table', name: 'Настольный', hue: 315, meta: '8 матчей · старт каждые полчаса', matches: [
+        { time: '10:00–10:15', a: ['Дев2'], b: ['Дев1'] },
+        { time: '10:30–10:45', a: ['Пар4'], b: ['Пар3'] },
+        { time: '11:00–11:15', a: ['Дев1'], b: ['Пар5'] },
+        { time: '11:30–11:45', a: ['Дев3'], b: ['Пар2'] },
+        { time: '12:00–12:15', a: ['Пар1'], b: ['Пар1'] },
+        { time: '12:30–12:45', a: ['Пар3'], b: ['Пар1'] },
+        { time: '13:00–13:15', a: ['Дев1'], b: ['Пар4'] },
+        { time: '13:30–13:45', a: ['Пар2'], b: ['Дев2'] }
+      ]}
+    ];
+    var mapA = { 'Дев1':'A1','Дев2':'A2','Дев3':'A3','Пар1':'A4','Пар2':'A5','Пар3':'A6','Пар4':'A7' };
+    var mapB = { 'Дев1':'B1','Дев2':'B2','Пар1':'B3','Пар2':'B4','Пар3':'B5','Пар4':'B6','Пар5':'B7' };
+    this.SPORTS.forEach(function(sp){ sp.matches.forEach(function(m){ m.a = m.a.map(function(l){ return mapA[l] || l; }); m.b = m.b.map(function(l){ return mapB[l] || l; }); }); });
+    this.TEAMS_KEY = 'teams-v1';
+    this.state = Object.assign({ assign: {}, teams: this.loadTeams(), filter: null, dragging: null, over: null, toast: null, online: false }, this.load());
+  }
+
+  loadTeams() {
+    const out = { A: [], B: [] };
+    try {
+      const raw = localStorage.getItem(this.TEAMS_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s && s.teams) {
+          out.A = (s.teams.teamA || []).slice();
+          out.B = (s.teams.teamB || []).slice();
+        }
+      }
+    } catch (e) {}
+    return out;
+  }
+  teamOf(pid) {
+    if (this.state.teams.A.indexOf(pid) !== -1) return 'A';
+    if (this.state.teams.B.indexOf(pid) !== -1) return 'B';
+    return null;
+  }
+
+  allSlotKeys() {
+    const keys = [];
+    this.TEAMS.forEach(t => t.slots.forEach(s => keys.push(t.id + ':' + s)));
+    return keys;
+  }
+  normalize(s) {
+    const valid = new Set(this.allSlotKeys());
+    const pids = new Set(this.PLAYERS.map(p => p.id));
+    const a = {}, used = new Set();
+    Object.keys(s.assign || {}).forEach(k => {
+      const pid = s.assign[k];
+      if (valid.has(k) && pids.has(pid) && !used.has(pid)) { a[k] = pid; used.add(pid); }
+    });
+    return { assign: a };
+  }
+  load() {
+    try { const raw = localStorage.getItem(this.KEY); if (raw) { const s = JSON.parse(raw); if (s && s.assign) return this.normalize(s); } } catch (e) {}
+    return { assign: {} };
+  }
+  persist(next) {
+    const s = Object.assign({}, this.state, next);
+    const data = { assign: s.assign };
+    try { localStorage.setItem(this.KEY, JSON.stringify(data)); } catch (e) {}
+    if (this._db && !this._applyingRemote) { try { this._db.set(data); } catch (e) {} }
+  }
+  componentDidMount() {
+    this._onStorage = (e) => {
+      if (e.key === this.KEY) this.setState(this.load());
+      if (e.key === this.TEAMS_KEY) this.setState({ teams: this.loadTeams() });
+    };
+    window.addEventListener('storage', this._onStorage);
+    this.initFirebase();
+  }
+  componentWillUnmount() {
+    window.removeEventListener('storage', this._onStorage);
+    clearTimeout(this._toastT); clearTimeout(this._fbT);
+    if (this._db) { try { this._db.off(); } catch (e) {} }
+    if (this._teamsDb) { try { this._teamsDb.off(); } catch (e) {} }
+  }
+  initFirebase() {
+    if (!this.FB || !this.FB.databaseURL) return;
+    if (!(window.firebase && window.firebase.database)) { this._fbT = setTimeout(() => this.initFirebase(), 200); return; }
+    try {
+      const app = (window.firebase.apps && window.firebase.apps.length) ? window.firebase.app() : window.firebase.initializeApp(this.FB);
+      this._db = window.firebase.database(app).ref('boards/games-v1');
+      this._db.on('value', (snap) => {
+        const s = snap.val();
+        if (!s || !s.assign) { if (Object.keys(this.state.assign).length === 0) return; }
+        const d = this.normalize(s || { assign: {} });
+        this._applyingRemote = true;
+        this.setState(d, () => { this._applyingRemote = false; });
+        try { localStorage.setItem(this.KEY, JSON.stringify(d)); } catch (e) {}
+      });
+      this._teamsDb = window.firebase.database(app).ref('boards/teams-v1');
+      this._teamsDb.on('value', (snap) => {
+        const s = snap.val();
+        if (!s || !s.teams) return;
+        this.setState({ teams: { A: (s.teams.teamA || []).slice(), B: (s.teams.teamB || []).slice() } });
+      });
+      this.setState({ online: true });
+    } catch (e) {}
+  }
+
+  showToast(msg) {
+    clearTimeout(this._toastT);
+    this.setState({ toast: msg });
+    this._toastT = setTimeout(() => this.setState({ toast: null }), 2800);
+  }
+
+  playerHue(p) { const idx = this.PLAYERS.indexOf(p); return (idx * 37 + 15) % 360; }
+  pv(p) {
+    const hue = this.playerHue(p);
+    return { id: p.id, name: p.name, color: 'oklch(0.58 0.13 ' + hue + ')', colorSoft: 'oklch(0.86 0.07 ' + hue + ')', hair: p.f ? 1 : 0 };
+  }
+
+  slotGenderOk(slotKey, pid) {
+    const player = this.PLAYERS.find(p => p.id === pid);
+    const label = slotKey.split(':')[1];
+    if (label.indexOf('Дев') === 0) return player.f === true;
+    return player.f === false;
+  }
+
+  move(pid, slotKey) {
+    if (slotKey) {
+      const slotTeam = slotKey.split(':')[0];
+      const pTeam = this.teamOf(pid);
+      if (pTeam && pTeam !== slotTeam) {
+        const nm = this.PLAYERS.find(p => p.id === pid);
+        this.showToast((nm ? nm.name : 'Игрок') + ' — из ' + (pTeam === 'A' ? 'Команды А' : 'Команды Б') + ', в другую команду нельзя');
+        this.setState({ over: null, dragging: null });
+        return;
+      }
+    }
+    const assign = Object.assign({}, this.state.assign);
+    Object.keys(assign).forEach(k => { if (assign[k] === pid) delete assign[k]; });
+    if (slotKey) assign[slotKey] = pid;
+    this.setState({ assign, over: null, dragging: null });
+    this.persist({ assign });
+  }
+
+  dragStart(pid) {
+    return (e) => { e.dataTransfer.setData('text/plain', pid); e.dataTransfer.effectAllowed = 'move'; this.setState({ dragging: pid }); };
+  }
+
+  renderVals() {
+    const assign = this.state.assign;
+    const filter = this.state.filter;
+    const byId = {};
+    this.PLAYERS.forEach(p => { byId[p.id] = p; });
+
+    const assignedPids = new Set(Object.keys(assign).map(k => assign[k]));
+    const pool = this.PLAYERS.filter(p => !assignedPids.has(p.id)).map(p => {
+      const v = this.pv(p);
+      const tm = this.teamOf(p.id);
+      return Object.assign(v, {
+        tag: tm ? (tm === 'A' ? 'А' : 'Б') : (p.f ? 'дев' : 'пар'),
+        tagColor: tm ? (tm === 'A' ? 'oklch(0.6 0.13 25)' : 'oklch(0.58 0.13 255)') : 'rgba(51,41,28,.35)',
+        onDragStart: this.dragStart(p.id)
+      });
+    });
+
+    const rosters = this.TEAMS.map(t => {
+      const slots = t.slots.map(label => {
+        const key = t.id + ':' + label;
+        const pid = assign[key];
+        const player = pid ? byId[pid] : null;
+        const isDev = label.indexOf('Дев') === 0;
+        const base = {
+          key, label,
+          filled: !!player, empty: !player,
+          hint: 'слот',
+          bg: player ? 'oklch(0.97 0.02 ' + t.hue + ')' : 'rgba(51,41,28,.04)',
+          labelColor: 'oklch(0.55 0.12 ' + t.hue + ')',
+          outline: this.state.over === key ? 'oklch(0.6 0.13 ' + t.hue + ')' : 'transparent',
+          onDragOver: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (this.state.over !== key) this.setState({ over: key }); },
+          onDragLeave: () => { if (this.state.over === key) this.setState({ over: null }); },
+          onDrop: (e) => { e.preventDefault(); const pid2 = e.dataTransfer.getData('text/plain') || this.state.dragging; if (pid2) this.move(pid2, key); }
+        };
+        if (player) {
+          Object.assign(base, this.pv(player), { key, label, filled: true, empty: false });
+          base.onDragStart = this.dragStart(player.id);
+          base.onRemove = () => this.move(player.id, null);
+        }
+        return base;
+      });
+      const filled = t.slots.filter(l => assign[t.id + ':' + l]).length;
+      return {
+        id: t.id, name: t.name, total: t.slots.length, filled,
+        accent: 'oklch(0.6 0.13 ' + t.hue + ')',
+        accentSoft: 'oklch(0.95 0.035 ' + t.hue + ')',
+        slots
+      };
+    });
+
+    const cell = (teamId, label, teamHue) => {
+      const key = teamId + ':' + label;
+      const pid = assign[key];
+      const player = pid ? byId[pid] : null;
+      const mine = filter && pid === filter;
+      if (player) {
+        const v = this.pv(player);
+        return { text: player.name, textColor: '#33291C', color: v.color, colorSoft: v.colorSoft, hair: v.hair,
+          bg: mine ? 'oklch(0.93 0.09 90)' : 'rgba(51,41,28,.04)',
+          ring: mine ? 'oklch(0.7 0.14 90)' : 'transparent' };
+      }
+      return { text: label, textColor: 'rgba(51,41,28,.4)', color: 'rgba(51,41,28,.3)', colorSoft: 'rgba(51,41,28,.15)', hair: 0,
+        bg: 'transparent', ring: 'transparent' };
+    };
+
+    const sports = this.SPORTS.map(sp => {
+      const matches = sp.matches.map(m => {
+        const aCells = m.a.map(l => cell('A', l, this.TEAMS[0].hue));
+        const bCells = m.b.map(l => cell('B', l, this.TEAMS[1].hue));
+        let active = true;
+        if (filter) {
+          const aKeys = m.a.map(l => 'A:' + l), bKeys = m.b.map(l => 'B:' + l);
+          active = aKeys.concat(bKeys).some(k => assign[k] === filter);
+        }
+        return { time: m.time, fmt: m.fmt || null, aCells, bCells,
+          opacity: active ? 1 : 0.32,
+          outline: (filter && active) ? 'oklch(0.7 0.14 90)' : 'transparent' };
+      });
+      return { id: sp.id, name: sp.name, meta: sp.meta,
+        accent: 'oklch(0.58 0.14 ' + sp.hue + ')',
+        accentSoft: 'oklch(0.96 0.03 ' + sp.hue + ')',
+        matches };
+    });
+
+    const filterChips = this.PLAYERS.filter(p => assignedPids.has(p.id)).map(p => {
+      const v = this.pv(p);
+      const active = filter === p.id;
+      return Object.assign(v, {
+        active,
+        bg: active ? '#33291C' : '#fff',
+        fg: active ? '#FAF3E7' : '#33291C',
+        border: active ? '#33291C' : 'rgba(51,41,28,.14)',
+        onClick: () => this.setState({ filter: active ? null : p.id })
+      });
+    });
+
+    const totalSlots = this.TEAMS.reduce((n, t) => n + t.slots.length, 0);
+    const assignedCount = Object.keys(assign).length;
+
+    return {
+      pool, rosters, sports, filterChips,
+      poolCount: pool.length, poolEmpty: pool.length === 0,
+      totalSlots, assignedCount,
+      progressPct: Math.round(assignedCount / totalSlots * 100),
+      hasFilter: !!filter,
+      clearFilter: () => this.setState({ filter: null }),
+      online: this.state.online, toast: this.state.toast,
+      allowDrop: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; },
+      onDragEnd: () => this.setState({ dragging: null, over: null }),
+      onDropPool: (e) => { e.preventDefault(); const pid = e.dataTransfer.getData('text/plain') || this.state.dragging; if (pid) this.move(pid, null); }
+    };
+  }
+}
+</script>
+</body>
+</html>
