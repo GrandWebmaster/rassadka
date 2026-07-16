@@ -39,7 +39,7 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
     <div style="display:flex;flex-direction:column;gap:4px">
       <div style="font-size:12px;font-weight:800;letter-spacing:.22em;color:oklch(0.6 0.13 55)">РАСПИСАНИЕ ТУРНИРА · 36 МАТЧЕЙ</div>
       <h1 style="margin:0;font-size:36px;font-weight:900;line-height:1.1">Игры</h1>
-      <div style="font-size:14px;color:rgba(51,41,28,.6)">Посади игроков в слоты своей команды — имена подставятся во все их матчи.</div>
+      <div style="font-size:14px;color:rgba(51,41,28,.6)">Итоговое расписание турнира. Фильтруй по игрокам, чтобы увидеть их матчи.</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:8px 16px;box-shadow:0 2px 8px rgba(51,41,28,.08)">
@@ -59,30 +59,6 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
   <!-- Top: pool + rosters -->
   <div data-top style="display:flex;flex-direction:column;gap:16px;padding:6px 32px 8px">
 
-    <!-- Pool -->
-    <div onDragOver="{{ allowDrop }}" onDrop="{{ onDropPool }}" style="background:rgba(51,41,28,.05);border:2px dashed rgba(51,41,28,.18);border-radius:20px;padding:14px;min-height:80px">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:900;letter-spacing:.04em">УЧАСТНИКИ</div>
-        <div style="font-size:13px;font-weight:800;color:rgba(51,41,28,.5)">{{ poolCount }}</div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:7px">
-        <sc-for list="{{ pool }}" as="p" hint-placeholder-count="14">
-          <div draggable="{{ true }}" onDragStart="{{ p.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:9px;background:#fff;border-radius:999px;padding:5px 13px 5px 6px;box-shadow:0 2px 6px rgba(51,41,28,.1);cursor:grab;user-select:none" style-hover="box-shadow:0 4px 12px rgba(51,41,28,.18);transform:translateY(-1px)">
-            <svg width="26" height="26" viewBox="0 0 24 24" style="flex:none">
-              <circle cx="12" cy="8.6" r="5.8" fill="{{ p.colorSoft }}" fill-opacity="{{ p.hair }}"></circle>
-              <circle cx="12" cy="8.5" r="4.1" fill="{{ p.color }}"></circle>
-              <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ p.color }}"></path>
-            </svg>
-            <div style="font-size:13.5px;font-weight:800">{{ p.name }}</div>
-            <div style="margin-left:auto;font-size:10px;font-weight:900;min-width:18px;text-align:center;color:#fff;background:{{ p.tagColor }};padding:2px 7px;border-radius:99px">{{ p.tag }}</div>
-          </div>
-        </sc-for>
-        <sc-if value="{{ poolEmpty }}" hint-placeholder-val="{{ false }}">
-          <div style="font-size:13px;color:rgba(51,41,28,.45);text-align:center;padding:14px 6px">Все в слотах!</div>
-        </sc-if>
-      </div>
-    </div>
-
     <!-- Team rosters -->
     <div data-rosters style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
     <sc-for list="{{ rosters }}" as="team" hint-placeholder-count="2">
@@ -96,17 +72,16 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <sc-for list="{{ team.slots }}" as="s" hint-placeholder-count="7">
-              <div onDragOver="{{ s.onDragOver }}" onDragLeave="{{ s.onDragLeave }}" onDrop="{{ s.onDrop }}" style="display:flex;align-items:center;gap:8px;background:{{ s.bg }};border-radius:12px;padding:6px 8px;min-height:42px;outline:2px solid {{ s.outline }};outline-offset:-2px;transition:outline-color .12s,background .12s">
+              <div style="display:flex;align-items:center;gap:8px;background:{{ s.bg }};border-radius:12px;padding:6px 8px;min-height:42px">
                 <div style="font-size:10px;font-weight:900;letter-spacing:.02em;color:{{ s.labelColor }};width:34px;flex:none">{{ s.label }}</div>
                 <sc-if value="{{ s.filled }}" hint-placeholder-val="{{ false }}">
-                  <div draggable="{{ true }}" onDragStart="{{ s.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;cursor:grab;user-select:none">
+                  <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0">
                     <svg width="22" height="22" viewBox="0 0 24 24" style="flex:none">
                       <circle cx="12" cy="8.6" r="5.8" fill="{{ s.colorSoft }}" fill-opacity="{{ s.hair }}"></circle>
                       <circle cx="12" cy="8.5" r="4.1" fill="{{ s.color }}"></circle>
                       <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ s.color }}"></path>
                     </svg>
                     <div style="font-size:12.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.name }}</div>
-                    <button onClick="{{ s.onRemove }}" title="Убрать" style="margin-left:auto;border:none;background:transparent;color:rgba(51,41,28,.3);font-size:14px;font-weight:900;cursor:pointer;padding:0 4px;line-height:1;flex:none" style-hover="color:oklch(0.55 0.18 25)">×</button>
                   </div>
                 </sc-if>
                 <sc-if value="{{ s.empty }}" hint-placeholder-val="{{ true }}">
@@ -286,7 +261,6 @@ class Component extends DCLogic {
     return { assign: a };
   }
   load() {
-    try { const raw = localStorage.getItem(this.KEY); if (raw) { const s = JSON.parse(raw); if (s && s.assign && Object.keys(s.assign).length) return this.normalize(s); } } catch (e) {}
     return this.normalize({ assign: this.defaultAssign() });
   }
   persist(next) {
@@ -328,22 +302,6 @@ class Component extends DCLogic {
     if (!(window.firebase && window.firebase.database)) { this._fbT = setTimeout(() => this.initFirebase(), 200); return; }
     try {
       const app = (window.firebase.apps && window.firebase.apps.length) ? window.firebase.app() : window.firebase.initializeApp(this.FB);
-      this._db = window.firebase.database(app).ref('boards/games-v1');
-      this._db.on('value', (snap) => {
-        const s = snap.val();
-        if (!s || !s.assign || Object.keys(s.assign).length === 0) {
-          const d = this.normalize({ assign: this.defaultAssign() });
-          this._applyingRemote = true;
-          this.setState(d, () => { this._applyingRemote = false; });
-          try { this._db.set({ assign: d.assign }); } catch (e) {}
-          try { localStorage.setItem(this.KEY, JSON.stringify(d)); } catch (e) {}
-          return;
-        }
-        const d = this.normalize(s);
-        this._applyingRemote = true;
-        this.setState(d, () => { this._applyingRemote = false; });
-        try { localStorage.setItem(this.KEY, JSON.stringify(d)); } catch (e) {}
-      });
       this._teamsDb = window.firebase.database(app).ref('boards/teams-v1');
       this._teamsDb.on('value', (snap) => {
         const s = snap.val();

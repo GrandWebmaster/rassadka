@@ -38,7 +38,7 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
     <div style="display:flex;flex-direction:column;gap:4px">
       <div style="font-size:12px;font-weight:800;letter-spacing:.22em;color:oklch(0.6 0.13 55)">ДЕЛИМСЯ НА ДВЕ КОМАНДЫ</div>
       <h1 style="margin:0;font-size:36px;font-weight:900;line-height:1.1">Составы команд</h1>
-      <div style="font-size:14px;color:rgba(51,41,28,.6)">Тяни карточки в команды. Не забудь назначить капитана в каждой — ★ на карточке.</div>
+      <div style="font-size:14px;color:rgba(51,41,28,.6)">Итоговые составы команд с уровнями игроков. Капитан отмечен ★.</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:8px 16px;box-shadow:0 2px 8px rgba(51,41,28,.08)">
@@ -59,62 +59,11 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
   </div>
 
   <!-- Board -->
-  <div data-board style="display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:18px;align-items:start;padding:0 32px;overflow-x:auto">
-
-    <!-- Pool -->
-    <div onDragOver="{{ allowDrop }}" onDrop="{{ onDropPool }}" style="background:rgba(51,41,28,.05);border:2px dashed rgba(51,41,28,.18);border-radius:22px;padding:16px;min-height:400px">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
-        <div style="font-size:14px;font-weight:900;letter-spacing:.04em">СВОБОДНЫЕ ИГРОКИ</div>
-        <div style="font-size:13px;font-weight:800;color:rgba(51,41,28,.5)">{{ poolCount }}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <sc-for list="{{ pool }}" as="c" hint-placeholder-count="8">
-          <div draggable="{{ true }}" onDragStart="{{ c.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="position:relative;background:#fff;border-radius:18px;box-shadow:0 3px 12px rgba(51,41,28,.1);cursor:grab;user-select:none;overflow:hidden" style-hover="box-shadow:0 8px 22px rgba(51,41,28,.16);transform:translateY(-2px)">
-            <div style="height:5px;background:linear-gradient(90deg,{{ c.color }},{{ c.colorSoft }})"></div>
-            <div style="padding:13px 15px 15px;display:flex;flex-direction:column;gap:11px">
-              <div style="display:flex;align-items:center;gap:11px">
-                <div style="width:44px;height:44px;border-radius:50%;background:{{ c.colorSoft }};display:flex;align-items:flex-end;justify-content:center;overflow:hidden;flex:none">
-                  <svg width="34" height="34" viewBox="0 0 24 24">
-                    <circle cx="12" cy="8.6" r="5.8" fill="{{ c.color }}" fill-opacity="{{ c.hair }}"></circle>
-                    <circle cx="12" cy="8.5" r="4.1" fill="{{ c.color }}"></circle>
-                    <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ c.color }}"></path>
-                  </svg>
-                </div>
-                <div style="flex:1;min-width:0">
-                  <div style="font-size:16px;font-weight:900;line-height:1.1">{{ c.name }}</div>
-                  <div style="font-size:11px;font-weight:700;color:rgba(51,41,28,.45)">средний уровень</div>
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:{{ c.ratingSoft }};flex:none">
-                  <div style="font-size:17px;font-weight:900;color:{{ c.ratingColor }};line-height:1">{{ c.overall }}</div>
-                  <div style="font-size:8px;font-weight:800;letter-spacing:.06em;color:{{ c.ratingColor }}">из 5</div>
-                </div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <sc-for list="{{ c.skills }}" as="s" hint-placeholder-count="4">
-                  <div style="display:flex;flex-direction:column;gap:3px">
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                      <span style="font-size:11px;font-weight:900;color:{{ s.color }}">{{ s.label }}</span>
-                      <span style="font-size:11px;font-weight:800;color:rgba(51,41,28,.45)">{{ s.valueLabel }}</span>
-                    </div>
-                    <div style="height:7px;border-radius:99px;background:rgba(0,0,0,.06);overflow:hidden">
-                      <div style="height:100%;border-radius:99px;background:{{ s.color }};width:{{ s.pct }}%;transition:width .5s"></div>
-                    </div>
-                    <div style="font-size:10.5px;font-style:italic;color:rgba(51,41,28,.5);line-height:1.25">«{{ s.phrase }}»</div>
-                  </div>
-                </sc-for>
-              </div>
-            </div>
-          </div>
-        </sc-for>
-        <sc-if value="{{ poolEmpty }}" hint-placeholder-val="{{ false }}">
-          <div style="font-size:13px;color:rgba(51,41,28,.45);text-align:center;padding:24px 6px">Все разобраны по командам!</div>
-        </sc-if>
-      </div>
-    </div>
+  <div data-board style="display:grid;grid-template-columns:repeat(2,minmax(300px,1fr));gap:18px;align-items:start;padding:0 32px;overflow-x:auto">
 
     <!-- Teams -->
     <sc-for list="{{ teams }}" as="team" hint-placeholder-count="2">
-      <div onDragOver="{{ team.onDragOver }}" onDragLeave="{{ team.onDragLeave }}" onDrop="{{ team.onDrop }}" style="background:#fff;border-radius:22px;box-shadow:0 4px 16px rgba(51,41,28,.08);overflow:hidden;outline:3px solid {{ team.outlineColor }};outline-offset:-3px;transition:outline-color .15s;min-height:400px">
+      <div style="background:#fff;border-radius:22px;box-shadow:0 4px 16px rgba(51,41,28,.08);overflow:hidden;min-height:400px">
         <div style="height:7px;background:{{ team.accent }}"></div>
         <div style="padding:16px;display:flex;flex-direction:column;gap:13px">
           <div style="display:flex;align-items:center;gap:10px">
@@ -143,7 +92,7 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
 
           <div style="display:flex;flex-direction:column;gap:12px">
             <sc-for list="{{ team.cards }}" as="c" hint-placeholder-count="0">
-              <div draggable="{{ true }}" onDragStart="{{ c.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="position:relative;background:#fff;border-radius:18px;box-shadow:0 3px 12px rgba(51,41,28,.1);cursor:grab;user-select:none;overflow:hidden;outline:2px solid {{ c.capOutline }};outline-offset:-2px" style-hover="box-shadow:0 8px 22px rgba(51,41,28,.16);transform:translateY(-2px)">
+              <div style="position:relative;background:#fff;border-radius:18px;box-shadow:0 3px 12px rgba(51,41,28,.1);overflow:hidden;outline:2px solid {{ c.capOutline }};outline-offset:-2px">
                 <sc-if value="{{ c.isCaptain }}" hint-placeholder-val="{{ false }}">
                   <div style="background:{{ team.accent }};color:#fff;font-size:10px;font-weight:900;letter-spacing:.14em;padding:4px 12px;display:flex;align-items:center;gap:6px">★ КАПИТАН</div>
                 </sc-if>

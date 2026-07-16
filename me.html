@@ -123,7 +123,6 @@ class Component extends DCLogic {
     try { return new URLSearchParams(window.location.search).get('me') || null; } catch (e) { return null; }
   }
   loadAssign() {
-    try { const raw = localStorage.getItem(this.GKEY); if (raw) { const s = JSON.parse(raw); if (s && s.assign) return s.assign; } } catch (e) {}
     const T = this.T();
     return T ? Object.assign({}, T.defaultAssign) : {};
   }
@@ -134,8 +133,7 @@ class Component extends DCLogic {
     } else {
       this.initFirebase();
     }
-    this._onStorage = (e) => { if (e.key === this.GKEY) this.setState({ assign: this.loadAssign() }); };
-    window.addEventListener('storage', this._onStorage);
+    window.addEventListener('storage', () => {});
   }
   componentWillUnmount() {
     window.removeEventListener('storage', this._onStorage);
@@ -148,14 +146,6 @@ class Component extends DCLogic {
     if (!(window.firebase && window.firebase.database)) { this._fbT = setTimeout(() => this.initFirebase(), 200); return; }
     try {
       const app = (window.firebase.apps && window.firebase.apps.length) ? window.firebase.app() : window.firebase.initializeApp(T.fbConfig);
-      this._db = window.firebase.database(app).ref('boards/games-v1');
-      this._db.on('value', (snap) => {
-        const s = snap.val();
-        if (s && s.assign && Object.keys(s.assign).length) {
-          this.setState({ assign: s.assign });
-          try { localStorage.setItem(this.GKEY, JSON.stringify({ assign: s.assign })); } catch (e) {}
-        }
-      });
       this.setState({ online: true });
     } catch (e) {}
   }
