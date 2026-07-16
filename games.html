@@ -16,7 +16,7 @@ body{margin:0;background:#FAF3E7;font-family:'Nunito',system-ui,sans-serif;}
 a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,16px);}to{opacity:1;transform:translate(-50%,0);}}
 @keyframes popIn{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:scale(1);}}
-@media (max-width:900px){[data-top]{grid-template-columns:1fr!important}[data-match]{grid-template-columns:88px 1fr!important}[data-bcol]{border-left:none!important}}
+@media (max-width:900px){[data-rosters]{grid-template-columns:1fr!important}[data-match]{grid-template-columns:88px 1fr!important}[data-bcol]{border-left:none!important}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -56,15 +56,15 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
   </div>
 
   <!-- Top: pool + rosters -->
-  <div data-top style="display:grid;grid-template-columns:250px 1fr 1fr;gap:16px;align-items:start;padding:6px 32px 8px">
+  <div data-top style="display:flex;flex-direction:column;gap:16px;padding:6px 32px 8px">
 
     <!-- Pool -->
-    <div onDragOver="{{ allowDrop }}" onDrop="{{ onDropPool }}" style="background:rgba(51,41,28,.05);border:2px dashed rgba(51,41,28,.18);border-radius:20px;padding:14px;min-height:200px">
+    <div onDragOver="{{ allowDrop }}" onDrop="{{ onDropPool }}" style="background:rgba(51,41,28,.05);border:2px dashed rgba(51,41,28,.18);border-radius:20px;padding:14px;min-height:80px">
       <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
         <div style="font-size:13px;font-weight:900;letter-spacing:.04em">УЧАСТНИКИ</div>
         <div style="font-size:13px;font-weight:800;color:rgba(51,41,28,.5)">{{ poolCount }}</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:7px">
+      <div style="display:flex;flex-wrap:wrap;gap:7px">
         <sc-for list="{{ pool }}" as="p" hint-placeholder-count="14">
           <div draggable="{{ true }}" onDragStart="{{ p.onDragStart }}" onDragEnd="{{ onDragEnd }}" style="display:flex;align-items:center;gap:9px;background:#fff;border-radius:999px;padding:5px 13px 5px 6px;box-shadow:0 2px 6px rgba(51,41,28,.1);cursor:grab;user-select:none" style-hover="box-shadow:0 4px 12px rgba(51,41,28,.18);transform:translateY(-1px)">
             <svg width="26" height="26" viewBox="0 0 24 24" style="flex:none">
@@ -83,6 +83,7 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
     </div>
 
     <!-- Team rosters -->
+    <div data-rosters style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
     <sc-for list="{{ rosters }}" as="team" hint-placeholder-count="2">
       <div style="background:#fff;border-radius:20px;box-shadow:0 4px 16px rgba(51,41,28,.08);overflow:hidden">
         <div style="height:6px;background:{{ team.accent }}"></div>
@@ -116,12 +117,13 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
         </div>
       </div>
     </sc-for>
+    </div>
   </div>
 
   <!-- Filter -->
   <div style="padding:14px 32px 6px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div style="font-size:12px;font-weight:900;letter-spacing:.12em;color:rgba(51,41,28,.45)">ФИЛЬТР ПО ИГРОКУ</div>
+      <div style="font-size:12px;font-weight:900;letter-spacing:.12em;color:rgba(51,41,28,.45)">ФИЛЬТР ПО ИГРОКАМ · можно несколько</div>
       <sc-for list="{{ filterChips }}" as="f" hint-placeholder-count="0">
         <button onClick="{{ f.onClick }}" style="font-family:inherit;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;padding:5px 12px 5px 6px;border-radius:999px;border:2px solid {{ f.border }};background:{{ f.bg }};color:{{ f.fg }};cursor:pointer">
           <svg width="20" height="20" viewBox="0 0 24 24" style="flex:none">
@@ -266,7 +268,7 @@ class Component extends DCLogic {
       ]}
     ];
     this.TEAMS_KEY = 'teams-v1';
-    this.state = Object.assign({ assign: {}, teams: this.loadTeams(), filter: null, dragging: null, over: null, toast: null, online: false }, this.load());
+    this.state = Object.assign({ assign: {}, teams: this.loadTeams(), filters: this.loadFilters(), dragging: null, over: null, toast: null, online: false }, this.load());
   }
 
   loadTeams() {
@@ -282,6 +284,32 @@ class Component extends DCLogic {
       }
     } catch (e) {}
     return out;
+  }
+  loadFilters() {
+    try {
+      const q = new URLSearchParams(window.location.search).get('p');
+      if (!q) return [];
+      const valid = new Set(this.PLAYERS.map(p => p.id));
+      return q.split(',').map(s => s.trim()).filter(id => valid.has(id));
+    } catch (e) { return []; }
+  }
+  syncUrl(filters) {
+    try {
+      const url = new URL(window.location.href);
+      if (filters.length) url.searchParams.set('p', filters.join(','));
+      else url.searchParams.delete('p');
+      window.history.replaceState(null, '', url);
+    } catch (e) {}
+  }
+  toggleFilter(pid) {
+    const cur = this.state.filters;
+    const filters = cur.indexOf(pid) !== -1 ? cur.filter(x => x !== pid) : cur.concat([pid]);
+    this.setState({ filters });
+    this.syncUrl(filters);
+  }
+  clearFilters() {
+    this.setState({ filters: [] });
+    this.syncUrl([]);
   }
   teamOf(pid) {
     if (this.state.teams.A.indexOf(pid) !== -1) return 'A';
@@ -395,7 +423,9 @@ class Component extends DCLogic {
 
   renderVals() {
     const assign = this.state.assign;
-    const filter = this.state.filter;
+    const filters = this.state.filters;
+    const filterSet = new Set(filters);
+    const hasFilter = filters.length > 0;
     const byId = {};
     this.PLAYERS.forEach(p => { byId[p.id] = p; });
 
@@ -447,7 +477,7 @@ class Component extends DCLogic {
       const key = teamId + ':' + label;
       const pid = assign[key];
       const player = pid ? byId[pid] : null;
-      const mine = filter && pid === filter;
+      const mine = pid && filterSet.has(pid);
       if (player) {
         const v = this.pv(player);
         return { text: player.name, textColor: '#33291C', color: v.color, colorSoft: v.colorSoft, hair: v.hair,
@@ -463,13 +493,13 @@ class Component extends DCLogic {
         const aCells = m.a.map(l => cell('A', l, this.TEAMS[0].hue));
         const bCells = m.b.map(l => cell('B', l, this.TEAMS[1].hue));
         let active = true;
-        if (filter) {
+        if (hasFilter) {
           const aKeys = m.a.map(l => 'A:' + l), bKeys = m.b.map(l => 'B:' + l);
-          active = aKeys.concat(bKeys).some(k => assign[k] === filter);
+          active = aKeys.concat(bKeys).some(k => filterSet.has(assign[k]));
         }
         return { time: m.time, fmt: m.fmt || null, aCells, bCells,
           opacity: active ? 1 : 0.32,
-          outline: (filter && active) ? 'oklch(0.7 0.14 90)' : 'transparent' };
+          outline: (hasFilter && active) ? 'oklch(0.7 0.14 90)' : 'transparent' };
       });
       return { id: sp.id, name: sp.name, meta: sp.meta,
         accent: 'oklch(0.58 0.14 ' + sp.hue + ')',
@@ -479,13 +509,13 @@ class Component extends DCLogic {
 
     const filterChips = this.PLAYERS.filter(p => assignedPids.has(p.id)).map(p => {
       const v = this.pv(p);
-      const active = filter === p.id;
+      const active = filterSet.has(p.id);
       return Object.assign(v, {
         active,
         bg: active ? '#33291C' : '#fff',
         fg: active ? '#FAF3E7' : '#33291C',
         border: active ? '#33291C' : 'rgba(51,41,28,.14)',
-        onClick: () => this.setState({ filter: active ? null : p.id })
+        onClick: () => this.toggleFilter(p.id)
       });
     });
 
@@ -497,8 +527,8 @@ class Component extends DCLogic {
       poolCount: pool.length, poolEmpty: pool.length === 0,
       totalSlots, assignedCount,
       progressPct: Math.round(assignedCount / totalSlots * 100),
-      hasFilter: !!filter,
-      clearFilter: () => this.setState({ filter: null }),
+      hasFilter: hasFilter,
+      clearFilter: () => this.clearFilters(),
       online: this.state.online, toast: this.state.toast,
       allowDrop: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; },
       onDragEnd: () => this.setState({ dragging: null, over: null }),
