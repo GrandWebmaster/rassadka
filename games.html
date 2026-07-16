@@ -36,9 +36,9 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
   <!-- Header -->
   <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px;padding:18px 32px 14px">
     <div style="display:flex;flex-direction:column;gap:4px">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.22em;color:oklch(0.6 0.13 55)">РАСПИСАНИЕ ТУРНИРА · 23 МАТЧА</div>
+      <div style="font-size:12px;font-weight:800;letter-spacing:.22em;color:oklch(0.6 0.13 55)">РАСПИСАНИЕ ТУРНИРА · 26 МАТЧЕЙ</div>
       <h1 style="margin:0;font-size:36px;font-weight:900;line-height:1.1">Игры</h1>
-      <div style="font-size:14px;color:rgba(51,41,28,.6)">Посади игроков в слоты команд — имена подставятся во все их матчи. Дев = девушка, Пар = парень.</div>
+      <div style="font-size:14px;color:rgba(51,41,28,.6)">Посади игроков в слоты своей команды — имена подставятся во все их матчи.</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:8px 16px;box-shadow:0 2px 8px rgba(51,41,28,.08)">
@@ -230,41 +230,41 @@ class Component extends DCLogic {
       { id: 'B', name: 'Команда Б', hue: 255, slots: ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7'] }
     ];
     this.SPORTS = [
-      { id: 'big', name: 'Большой теннис', hue: 145, meta: '6 матчей · 10:00–13:50', matches: [
-        { time: '10:00–10:30', fmt: 'одиночка', a: ['Пар3'], b: ['Дев2'] },
-        { time: '10:40–11:10', fmt: 'пара', a: ['Дев2', 'Дев3'], b: ['Дев1', 'Пар2'] },
-        { time: '11:20–11:50', fmt: 'одиночка', a: ['Пар1'], b: ['Пар1'] },
-        { time: '12:00–12:30', fmt: 'пара', a: ['Дев1', 'Дев3'], b: ['Пар2', 'Пар4'] },
-        { time: '12:40–13:10', fmt: 'одиночка', a: ['Пар2'], b: ['Пар3'] },
-        { time: '13:20–13:50', fmt: 'пара', a: ['Дев2', 'Пар4'], b: ['Пар3', 'Пар5'] }
+      { id: 'big', name: 'Большой теннис', hue: 145, meta: '8 матчей · 10:00–13:50', matches: [
+        { time: '10:00–10:20', fmt: 'одиночка', a: ['A1'], b: ['B1'] },
+        { time: '10:30–10:50', fmt: 'пара', a: ['A6', 'A2'], b: ['B4', 'B6'] },
+        { time: '11:00–11:20', fmt: 'пара', a: ['A2', 'A5'], b: ['B5', 'B2'] },
+        { time: '11:30–11:50', fmt: 'одиночка', a: ['A6'], b: ['B3'] },
+        { time: '12:00–12:20', fmt: 'пара', a: ['A7', 'A3'], b: ['B7', 'B5'] },
+        { time: '12:30–12:50', fmt: 'пара', a: ['A5', 'A4'], b: ['B2', 'B6'] },
+        { time: '13:00–13:20', fmt: 'пара', a: ['A4', 'A7'], b: ['B1', 'B3'] },
+        { time: '13:30–13:50', fmt: 'пара', a: ['A1', 'A3'], b: ['B7', 'B4'] }
       ]},
-      { id: 'padel', name: 'Падел', hue: 250, meta: '5 матчей · 10:10–13:40', matches: [
-        { time: '10:10–10:40', a: ['Дев1', 'Пар2'], b: ['Пар4', 'Пар5'] },
-        { time: '10:55–11:25', a: ['Пар2', 'Пар4'], b: ['Пар3', 'Пар4'] },
-        { time: '11:40–12:10', a: ['Пар3', 'Пар4'], b: ['Дев2', 'Пар5'] },
-        { time: '12:25–12:55', a: ['Дев2', 'Пар1'], b: ['Дев1', 'Дев2'] },
-        { time: '13:10–13:40', a: ['Дев3', 'Пар1'], b: ['Пар1', 'Пар2'] }
+      { id: 'padel', name: 'Падел', hue: 250, meta: '5 матчей · 10:00–13:50', matches: [
+        { time: '10:00–10:20', a: ['A2', 'A3'], b: ['B2', 'B3'] },
+        { time: '11:00–11:20', a: ['A7', 'A6'], b: ['B7', 'B1'] },
+        { time: '11:30–11:50', a: ['A3', 'A4'], b: ['B4', 'B7'] },
+        { time: '13:00–13:20', a: ['A5', 'A1'], b: ['B6', 'B5'] },
+        { time: '13:30–13:50', a: ['A7', 'A5'], b: ['B3', 'B6'] }
       ]},
-      { id: 'beach', name: 'Пляжный', hue: 45, meta: '4 матча · 10:40–13:55', matches: [
-        { time: '10:40–11:00', a: ['Пар1', 'Пар3'], b: ['Дев2', 'Пар1'] },
-        { time: '11:40–12:00', a: ['Дев2', 'Пар2'], b: ['Дев1', 'Пар3'] },
-        { time: '12:40–13:00', a: ['Дев3', 'Пар4'], b: ['Пар2', 'Пар5'] },
-        { time: '13:35–13:55', a: ['Дев1', 'Пар3'], b: ['Дев1', 'Пар4'] }
+      { id: 'beach', name: 'Пляжный', hue: 45, meta: '5 матчей · 10:35–14:15', matches: [
+        { time: '10:35–10:50', a: ['A1', 'A5'], b: ['B1', 'B2'] },
+        { time: '12:00–12:15', a: ['A1', 'A6'], b: ['B6', 'B1'] },
+        { time: '12:30–12:45', a: ['A2', 'A7'], b: ['B7', 'B5'] },
+        { time: '13:00–13:15', a: ['A6', 'A3'], b: ['B2', 'B4'] },
+        { time: '14:00–14:15', a: ['A2', 'A4'], b: ['B3', 'B5'] }
       ]},
-      { id: 'table', name: 'Настольный', hue: 315, meta: '8 матчей · старт каждые полчаса', matches: [
-        { time: '10:00–10:15', a: ['Дев2'], b: ['Дев1'] },
-        { time: '10:30–10:45', a: ['Пар4'], b: ['Пар3'] },
-        { time: '11:00–11:15', a: ['Дев1'], b: ['Пар5'] },
-        { time: '11:30–11:45', a: ['Дев3'], b: ['Пар2'] },
-        { time: '12:00–12:15', a: ['Пар1'], b: ['Пар1'] },
-        { time: '12:30–12:45', a: ['Пар3'], b: ['Пар1'] },
-        { time: '13:00–13:15', a: ['Дев1'], b: ['Пар4'] },
-        { time: '13:30–13:45', a: ['Пар2'], b: ['Дев2'] }
+      { id: 'table', name: 'Настольный', hue: 315, meta: '8 матчей · 10:00–13:35', matches: [
+        { time: '10:00–10:10', a: ['A4'], b: ['B4'] },
+        { time: '10:15–10:25', a: ['A5'], b: ['B5'] },
+        { time: '10:30–10:40', a: ['A7'], b: ['B7'] },
+        { time: '10:45–10:55', a: ['A4'], b: ['B3'] },
+        { time: '11:00–11:10', a: ['A3'], b: ['B4'] },
+        { time: '11:15–11:25', a: ['A1'], b: ['B6'] },
+        { time: '11:30–11:40', a: ['A2'], b: ['B1'] },
+        { time: '13:25–13:35', a: ['A6'], b: ['B2'] }
       ]}
     ];
-    var mapA = { 'Дев1':'A1','Дев2':'A2','Дев3':'A3','Пар1':'A4','Пар2':'A5','Пар3':'A6','Пар4':'A7' };
-    var mapB = { 'Дев1':'B1','Дев2':'B2','Пар1':'B3','Пар2':'B4','Пар3':'B5','Пар4':'B6','Пар5':'B7' };
-    this.SPORTS.forEach(function(sp){ sp.matches.forEach(function(m){ m.a = m.a.map(function(l){ return mapA[l] || l; }); m.b = m.b.map(function(l){ return mapB[l] || l; }); }); });
     this.TEAMS_KEY = 'teams-v1';
     this.state = Object.assign({ assign: {}, teams: this.loadTeams(), filter: null, dragging: null, over: null, toast: null, online: false }, this.load());
   }
