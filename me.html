@@ -17,7 +17,7 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
 @keyframes popIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 @media (max-width:720px){[data-picker]{grid-template-columns:1fr 1fr!important}}
 </style>
-<script src="tournament-data.js?v=20260716b"></script>
+<script src="tournament-data.js?v=20260717f"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </helmet>
@@ -27,8 +27,10 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
   <div style="display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 0">
     <a href="index.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Главная</a>
     <a href="games.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Все игры</a>
+    <a href="rating.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Рейтинг</a>
     <sc-if value="{{ hasMe }}" hint-placeholder-val="{{ false }}">
       <a href="?" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">← Выбрать другого</a>
+      <button onClick="{{ onShare }}" style="font-family:inherit;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;border:none;background:#33291C;color:#FAF3E7;cursor:pointer">{{ shareLabel }}</button>
     </sc-if>
     <sc-if value="{{ online }}" hint-placeholder-val="{{ false }}">
       <div style="display:flex;align-items:center;gap:7px;background:oklch(0.95 0.03 165);color:oklch(0.48 0.12 165);font-size:12px;font-weight:800;padding:8px 14px;border-radius:999px">
@@ -61,14 +63,9 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
   <!-- Personal card -->
   <sc-if value="{{ hasMe }}" hint-placeholder-val="{{ false }}">
     <div style="padding:22px 0 0">
-      <div style="background:linear-gradient(135deg,{{ me.color }},{{ me.colorDark }});border-radius:24px;padding:24px;color:#fff;box-shadow:0 10px 30px rgba(51,41,28,.18);display:flex;align-items:center;gap:18px">
-        <div style="width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;flex:none">
-          <svg width="60" height="60" viewBox="0 0 24 24">
-            <circle cx="12" cy="8.6" r="5.8" fill="#fff" fill-opacity="{{ me.hair }}"></circle>
-            <circle cx="12" cy="8.5" r="4.1" fill="#fff"></circle>
-            <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="#fff"></path>
-          </svg>
-        </div>
+      <div style="background:linear-gradient(135deg,{{ me.headA }},{{ me.headB }});border-radius:24px;padding:24px;color:{{ me.headText }};box-shadow:0 10px 30px rgba(51,41,28,.18);display:flex;align-items:center;gap:18px">
+        <div style="width:78px;height:78px;border-radius:16px;background:{{ me.square }};display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none">
+          <img src="{{ me.teamImg }}" alt="" style="width:100%;height:100%;object-fit:contain"></div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:800;letter-spacing:.16em;opacity:.85">{{ me.teamLabel }}</div>
           <div style="font-size:30px;font-weight:900;line-height:1.05">{{ me.name }}</div>
@@ -100,6 +97,23 @@ a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
                   </sc-if>
                   <div style="font-size:13.5px;font-weight:700"><span style="color:rgba(51,41,28,.5)">против:</span> <b>{{ m.opponents }}</b></div>
                 </div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:11px;padding-top:10px;border-top:1px dashed rgba(51,41,28,.1)">
+                  <sc-if value="{{ m.editing }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:11px;font-weight:800;color:rgba(51,41,28,.45)">Я</span>
+                    <input type="number" min="0" max="99" inputmode="numeric" placeholder="—" value="{{ m.scoreMine }}" onInput="{{ m.onScoreMine }}" style="width:48px;text-align:center;font-family:inherit;font-size:16px;font-weight:900;padding:5px 2px;border-radius:8px;border:2px solid rgba(51,41,28,.15);background:#fff;color:#33291C;outline:none">
+                    <span style="font-weight:900;color:rgba(51,41,28,.4)">:</span>
+                    <input type="number" min="0" max="99" inputmode="numeric" placeholder="—" value="{{ m.scoreOpp }}" onInput="{{ m.onScoreOpp }}" style="width:48px;text-align:center;font-family:inherit;font-size:16px;font-weight:900;padding:5px 2px;border-radius:8px;border:2px solid rgba(51,41,28,.15);background:#fff;color:#33291C;outline:none">
+                    <span style="font-size:11px;font-weight:800;color:rgba(51,41,28,.45)">Соперник</span>
+                    <button onClick="{{ m.onDone }}" style="margin-left:auto;font-family:inherit;font-size:12px;font-weight:800;padding:6px 14px;border-radius:8px;border:none;background:oklch(0.6 0.15 145);color:#fff;cursor:pointer">Готово</button>
+                  </sc-if>
+                  <sc-if value="{{ m.notEditing }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size:16px;font-weight:900;color:{{ m.resultColor }}">{{ m.scoreText }}</span>
+                    <sc-if value="{{ m.hasScore }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size:12px;font-weight:900;color:{{ m.resultColor }}">{{ m.resultLabel }}</span>
+                    </sc-if>
+                    <button onClick="{{ m.onEdit }}" style="margin-left:auto;font-family:inherit;font-size:12px;font-weight:800;padding:6px 14px;border-radius:8px;border:2px solid rgba(51,41,28,.15);background:#fff;color:#33291C;cursor:pointer">{{ m.editBtnLabel }}</button>
+                  </sc-if>
+                </div>
               </div>
             </div>
           </sc-for>
@@ -116,7 +130,19 @@ class Component extends DCLogic {
     super(props);
     this.GKEY = 'games-v1';
     this.TKEY = 'teams-v1';
-    this.state = { assign: this.loadAssign(), me: this.readMe(), online: false, tick: 0 };
+    this.SCORES_KEY = 'games-scores-v1';
+    this.state = { assign: this.loadAssign(), scores: this.loadScores(), me: this.readMe(), editMid: null, online: false, shared: false, tick: 0 };
+  }
+  loadScores() { try { const r = localStorage.getItem(this.SCORES_KEY); if (r) return JSON.parse(r) || {}; } catch (e) {} return {}; }
+  setScore(mid, side, val) {
+    const v = val === '' ? null : Math.max(0, Math.min(99, parseInt(val, 10) || 0));
+    const scores = Object.assign({}, this.state.scores);
+    const cur = Object.assign({ a: null, b: null }, scores[mid]);
+    cur[side] = v;
+    if (cur.a === null && cur.b === null) delete scores[mid]; else scores[mid] = cur;
+    this.setState({ scores });
+    try { localStorage.setItem(this.SCORES_KEY, JSON.stringify(scores)); } catch (e) {}
+    if (this._sDb) { try { this._sDb.set(scores); } catch (e) {} }
   }
 
   T() { return window.TOURNAMENT || null; }
@@ -140,6 +166,7 @@ class Component extends DCLogic {
     window.removeEventListener('storage', this._onStorage);
     clearInterval(this._dataT); clearTimeout(this._fbT);
     if (this._db) { try { this._db.off(); } catch (e) {} }
+    if (this._sDb) { try { this._sDb.off(); } catch (e) {} }
   }
   initFirebase() {
     const T = this.T();
@@ -147,6 +174,8 @@ class Component extends DCLogic {
     if (!(window.firebase && window.firebase.database)) { this._fbT = setTimeout(() => this.initFirebase(), 200); return; }
     try {
       const app = (window.firebase.apps && window.firebase.apps.length) ? window.firebase.app() : window.firebase.initializeApp(T.fbConfig);
+      this._sDb = window.firebase.database(app).ref('boards/games-scores-v1');
+      this._sDb.on('value', (snap) => { const s = snap.val() || {}; this.setState({ scores: s }); try { localStorage.setItem(this.SCORES_KEY, JSON.stringify(s)); } catch (e) {} });
       this.setState({ online: true });
     } catch (e) {}
   }
@@ -195,12 +224,19 @@ class Component extends DCLogic {
     const h = this.hue(mePlayer, players);
     const teamObj = (T.teams || []).find(t => t.id === myTeam);
     const teamLabel = teamObj ? teamObj.name.toUpperCase() : 'НЕ В КОМАНДЕ';
+    const teamColor = teamObj && teamObj.color ? teamObj.color : ('oklch(0.55 0.14 ' + h + ')');
+    const teamColorDark = teamObj && teamObj.colorDark ? teamObj.colorDark : ('oklch(0.42 0.13 ' + h + ')');
+    const teamImg = teamObj ? teamObj.img : '';
+    const headA = teamObj && teamObj.headA ? teamObj.headA : teamColor;
+    const headB = teamObj && teamObj.headB ? teamObj.headB : teamColorDark;
+    const headText = teamObj && teamObj.headText ? teamObj.headText : '#fff';
+    const square = teamObj && teamObj.square ? teamObj.square : 'rgba(255,255,255,.9)';
 
     const items = [];
     if (myLabel) {
       T.sports.forEach(sp => {
         const dur = (T.dur && T.dur[sp.id]) || 30;
-        sp.matches.forEach(mt => {
+        sp.matches.forEach((mt, i) => {
           const inA = mt.a.indexOf(myLabel) !== -1;
           const inB = mt.b.indexOf(myLabel) !== -1;
           if (!inA && !inB) return;
@@ -212,16 +248,35 @@ class Component extends DCLogic {
           let where = sp.name;
           if (mt.fmt && mt.fmt.indexOf('Стол') === 0) where = mt.fmt;
           else if (mt.fmt === 'одиночка') where = 'одиночка';
+          const mid = sp.id + '#' + i;
+          const mySide = inA ? 'a' : 'b', oppSide = inA ? 'b' : 'a';
+          const sc = this.state.scores[mid] || {};
+          const myG = sc[mySide], opG = sc[oppSide];
+          const hasScore = myG !== null && myG !== undefined && opG !== null && opG !== undefined;
+          const won = hasScore && myG > opG, lost = hasScore && opG > myG;
           items.push({
             sortKey: mt.time,
             time: mt.time + '–' + this.addMinutes(mt.time, dur),
             icon: sp.icon || '', sport: sp.name,
-            accent: 'oklch(0.56 0.14 ' + sp.hue + ')',
+            accent: won ? 'oklch(0.6 0.15 145)' : lost ? 'oklch(0.6 0.16 25)' : 'oklch(0.56 0.14 ' + sp.hue + ')',
             accentSoft: 'oklch(0.95 0.035 ' + sp.hue + ')',
             where: where,
             hasPartner: partnerLabels.length > 0,
             partner: partner,
-            opponents: opponents
+            opponents: opponents,
+            mid: mid, mySide: mySide, oppSide: oppSide,
+            editing: this.state.editMid === mid, notEditing: this.state.editMid !== mid,
+            hasScore: hasScore,
+            scoreMine: (myG === null || myG === undefined) ? '' : myG,
+            scoreOpp: (opG === null || opG === undefined) ? '' : opG,
+            resultLabel: won ? '✓ Победа' : lost ? '✕ Поражение' : '',
+            resultColor: won ? 'oklch(0.55 0.14 145)' : lost ? 'oklch(0.55 0.16 25)' : 'rgba(51,41,28,.4)',
+            scoreText: hasScore ? (myG + ' : ' + opG) : '—',
+            editBtnLabel: hasScore ? '✎ счёт' : 'Ввести счёт',
+            onEdit: () => this.setState({ editMid: mid }),
+            onDone: () => this.setState({ editMid: null }),
+            onScoreMine: (e) => this.setScore(mid, mySide, e.target.value),
+            onScoreOpp: (e) => this.setScore(mid, oppSide, e.target.value)
           });
         });
       });
@@ -232,14 +287,23 @@ class Component extends DCLogic {
       ? (items.length + ' ' + this.plural(items.length, 'матч', 'матча', 'матчей') + ' · с ' + (items.length ? items[0].time.split('–')[0] : '—') + ' до ' + (items.length ? items[items.length - 1].time.split('–')[1] : '—'))
       : 'Тебя пока нет в составе команды';
 
+    const onShare = () => {
+      const url = window.location.href;
+      const done = () => { this.setState({ shared: true }); clearTimeout(this._shareT); this._shareT = setTimeout(() => this.setState({ shared: false }), 2000); };
+      try { if (navigator.share) { navigator.share({ title: 'Моя дорожная карта — ' + mePlayer.name, url: url }); return; } } catch (e) {}
+      try { navigator.clipboard.writeText(url).then(done, done); } catch (e) { done(); }
+    };
     return {
       showPicker: false, hasMe: true, online: this.state.online,
+      onShare: onShare, shareLabel: this.state.shared ? '✓ Ссылка скопирована' : '↗ Поделиться',
       allPlayers, timeline: items, noMatches: myLabel && items.length === 0,
       me: {
         name: mePlayer.name,
-        color: 'oklch(0.55 0.14 ' + h + ')',
-        colorDark: 'oklch(0.42 0.13 ' + h + ')',
+        color: teamColor,
+        colorDark: teamColorDark,
         hair: mePlayer.f ? 1 : 0,
+        teamImg: teamImg,
+        headA: headA, headB: headB, headText: headText, square: square,
         teamLabel: teamLabel,
         summary: summary
       }

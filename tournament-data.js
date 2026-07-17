@@ -26,8 +26,8 @@ window.TOURNAMENT = {
     { id: 'sasha',  name: 'Александра', f: true  }
   ],
   teams: [
-    { id: 'A', name: 'Команда А', hue: 25,  slots: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7'] },
-    { id: 'B', name: 'Команда Б', hue: 255, slots: ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7'] }
+    { id: 'A', name: 'Гус-эйс', color: '#7b3ff2', colorDark: '#5a1fc8', headA: '#a48bf2', headB: '#8b6ef0', headText: '#ffffff', square: 'rgba(255,255,255,.92)', hue: 285, img: 'team-goose-t.png', slots: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7'] },
+    { id: 'B', name: 'Кроко-смэш', color: '#e0a80d', colorDark: '#b3830a', headA: '#fdf3d3', headB: '#f7e7ac', headText: '#6b4e00', square: '#fffdf5', hue: 85, img: 'team-croco-t.png', slots: ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7'] }
   ],
   dur: { big: 20, padel: 20, beach: 15, table: 10 },
   defaultAssign: {

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#FAF3E7;font-family:'Nunito',system-ui,sans-serif;}
+a{color:oklch(0.55 0.13 55);} a:hover{color:oklch(0.45 0.13 55);}
+@media (max-width:760px){[data-tbl]{font-size:12px!important}[data-hidecol]{display:none!important}}
+</style>
+<script src="tournament-data.js?v=20260717f"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</helmet>
+
+<div data-screen-label="Рейтинг" style="min-height:100vh;max-width:1100px;margin:0 auto;font-family:'Nunito',system-ui,sans-serif;color:#33291C;padding-bottom:48px">
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;padding:20px 24px 0">
+    <a href="index.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Главная</a>
+    <a href="games.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Игры</a>
+    <span style="font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:#33291C;color:#FAF3E7">Рейтинг</span>
+    <a href="me.html" style="text-decoration:none;font-size:13px;font-weight:800;padding:8px 16px;border-radius:999px;background:rgba(51,41,28,.06);color:rgba(51,41,28,.6)">Моя дорога</a>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding:18px 24px 8px">
+    <div>
+      <div style="font-size:12px;font-weight:800;letter-spacing:.22em;color:oklch(0.6 0.13 55)">ТУРНИРНАЯ ТАБЛИЦА</div>
+      <h1 style="margin:6px 0 2px;font-size:34px;font-weight:900;line-height:1.1">Рейтинг</h1>
+      <div style="font-size:14px;color:rgba(51,41,28,.6)">Обновляется по мере ввода счёта на странице «Игры».</div>
+    </div>
+    <sc-if value="{{ online }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:7px;background:oklch(0.95 0.03 165);color:oklch(0.48 0.12 165);font-size:12px;font-weight:800;padding:9px 14px;border-radius:999px">
+        <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.65 0.15 165)"></span>Синхронизация
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- Team standings -->
+  <div style="padding:12px 24px 0">
+    <div style="font-size:13px;font-weight:900;letter-spacing:.14em;color:rgba(51,41,28,.45);margin-bottom:10px">КОМАНДНЫЙ ЗАЧЁТ</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <sc-for list="{{ teams }}" as="t" hint-placeholder-count="2">
+        <div style="background:#fff;border-radius:18px;box-shadow:0 3px 12px rgba(51,41,28,.08);overflow:hidden;border:2px solid {{ t.border }}">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:{{ t.head }}">
+            <div style="width:48px;height:48px;border-radius:12px;background:{{ t.square }};display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none"><img src="{{ t.img }}" alt="" style="width:100%;height:100%;object-fit:contain"></div>
+            <div style="flex:1">
+              <div style="font-size:18px;font-weight:900;color:{{ t.nameColor }}">{{ t.name }}</div>
+              <div style="font-size:12px;font-weight:700;color:{{ t.subColor }}">{{ t.record }}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:30px;font-weight:900;line-height:1;color:{{ t.placeColor }}">{{ t.placeMark }}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(51,41,28,.08)">
+            <div style="background:#fff;padding:10px;text-align:center"><div style="font-size:20px;font-weight:900">{{ t.wins }}</div><div style="font-size:10px;font-weight:800;color:rgba(51,41,28,.5)">ПОБЕДЫ</div></div>
+            <div style="background:#fff;padding:10px;text-align:center"><div style="font-size:20px;font-weight:900">{{ t.gf }}:{{ t.ga }}</div><div style="font-size:10px;font-weight:800;color:rgba(51,41,28,.5)">ГЕЙМЫ</div></div>
+            <div style="background:#fff;padding:10px;text-align:center"><div style="font-size:20px;font-weight:900;color:{{ t.diffColor }}">{{ t.diffLabel }}</div><div style="font-size:10px;font-weight:800;color:rgba(51,41,28,.5)">РАЗНИЦА</div></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- Personal standings -->
+  <div style="padding:24px 24px 0">
+    <div style="font-size:13px;font-weight:900;letter-spacing:.14em;color:rgba(51,41,28,.45);margin-bottom:10px">ЛИЧНЫЙ ЗАЧЁТ</div>
+    <div style="background:#fff;border-radius:18px;box-shadow:0 3px 12px rgba(51,41,28,.08);overflow:hidden">
+      <div data-tbl style="width:100%">
+        <div style="display:grid;grid-template-columns:62px 1fr 54px 48px 48px 68px 60px;gap:0;padding:11px 14px;background:#33291C;color:#FAF3E7;font-size:11px;font-weight:900;letter-spacing:.04em">
+          <div>МЕСТО</div><div>ИГРОК</div>
+          <div style="text-align:center" data-hidecol>ИГР</div>
+          <div style="text-align:center">В</div>
+          <div style="text-align:center">П</div>
+          <div style="text-align:center">ГЕЙМЫ</div>
+          <div style="text-align:center">РАЗН.</div>
+        </div>
+        <sc-for list="{{ players }}" as="p" hint-placeholder-count="14">
+          <div style="display:grid;grid-template-columns:62px 1fr 54px 48px 48px 68px 60px;gap:0;padding:9px 14px;align-items:center;border-top:1px solid rgba(51,41,28,.06);background:{{ p.rowBg }}">
+            <div style="display:flex;align-items:center;gap:3px"><sc-if value="{{ p.hasMedal }}" hint-placeholder-val="{{ false }}"><span style="font-size:17px">{{ p.medal }}</span></sc-if><span style="font-size:16px;font-weight:900;color:{{ p.placeColor }}">{{ p.place }}</span></div>
+            <div style="display:flex;align-items:center;gap:9px;min-width:0">
+              <svg width="26" height="26" viewBox="0 0 24 24" style="flex:none">
+                <circle cx="12" cy="8.6" r="5.8" fill="{{ p.colorSoft }}" fill-opacity="{{ p.hair }}"></circle>
+                <circle cx="12" cy="8.5" r="4.1" fill="{{ p.color }}"></circle>
+                <path d="M4.5 21c0-4.2 3.4-7 7.5-7s7.5 2.8 7.5 7z" fill="{{ p.color }}"></path>
+              </svg>
+              <div style="min-width:0">
+                <div style="font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.name }}</div>
+                <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                  <div style="font-size:10px;font-weight:800;letter-spacing:.04em;color:{{ p.teamColor }}">{{ p.teamName }}</div>
+                  <sc-if value="{{ p.hasSportWins }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <sc-for list="{{ p.sportWins }}" as="sw" hint-placeholder-count="0">
+                        <span style="font-size:10px;font-weight:900;color:rgba(51,41,28,.55)">{{ sw.icon }}{{ sw.n }}</span>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+            <div style="text-align:center;font-weight:800;color:rgba(51,41,28,.6)" data-hidecol>{{ p.games }}</div>
+            <div style="text-align:center;font-size:15px;font-weight:900;color:oklch(0.55 0.14 145)">{{ p.wins }}</div>
+            <div style="text-align:center;font-weight:800;color:rgba(51,41,28,.55)">{{ p.losses }}</div>
+            <div style="text-align:center;font-weight:800">{{ p.gf }}:{{ p.ga }}</div>
+            <div style="text-align:center;font-size:14px;font-weight:900;color:{{ p.diffColor }}">{{ p.diffLabel }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="font-size:12px;color:rgba(51,41,28,.45);margin-top:12px;line-height:1.5">Место: по числу побед; при равенстве — по разнице геймов; далее — по числу выигранных геймов. Учитываются только матчи с введённым счётом.</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.SCORES_KEY = 'games-scores-v1';
+    this.TEAMS_KEY = 'teams-v1';
+    this.state = { scores: this.loadScores(), teamsOverride: null, online: false, ready: !!this.T() };
+  }
+  T() { return window.TOURNAMENT || null; }
+  loadScores() { try { const r = localStorage.getItem(this.SCORES_KEY); if (r) return JSON.parse(r) || {}; } catch (e) {} return {}; }
+
+  componentDidMount() {
+    if (!this.T()) this._dataT = setInterval(() => { if (this.T()) { clearInterval(this._dataT); this.setState({ ready: true }); this.initFirebase(); } }, 60);
+    this._onStorage = (e) => { if (e.key === this.SCORES_KEY) this.setState({ scores: this.loadScores() }); };
+    window.addEventListener('storage', this._onStorage);
+    this.initFirebase();
+  }
+  componentWillUnmount() {
+    window.removeEventListener('storage', this._onStorage);
+    clearInterval(this._dataT); clearTimeout(this._fbT);
+    if (this._sDb) { try { this._sDb.off(); } catch (e) {} }
+    if (this._tDb) { try { this._tDb.off(); } catch (e) {} }
+  }
+  initFirebase() {
+    const T = this.T(); if (!T || !T.fbConfig || !T.fbConfig.databaseURL) return;
+    if (!(window.firebase && window.firebase.database)) { this._fbT = setTimeout(() => this.initFirebase(), 200); return; }
+    try {
+      const app = (window.firebase.apps && window.firebase.apps.length) ? window.firebase.app() : window.firebase.initializeApp(T.fbConfig);
+      this._sDb = window.firebase.database(app).ref('boards/games-scores-v1');
+      this._sDb.on('value', (snap) => { const s = snap.val() || {}; this.setState({ scores: s }); try { localStorage.setItem(this.SCORES_KEY, JSON.stringify(s)); } catch (e) {} });
+      this._tDb = window.firebase.database(app).ref('boards/teams-v1');
+      this._tDb.on('value', (snap) => { const s = snap.val(); if (s && s.teams) this.setState({ teamsOverride: { A: (s.teams.teamA || []).slice(), B: (s.teams.teamB || []).slice() } }); });
+      this.setState({ online: true });
+    } catch (e) {}
+  }
+
+  hue(p, players) { const idx = players.indexOf(p); return (idx * 37 + 15) % 360; }
+
+  compute() {
+    const T = this.T();
+    const players = T.players, scores = this.state.scores;
+    const byId = {}; players.forEach(p => byId[p.id] = p);
+    // slot label -> pid, and pid -> team id
+    const slotPid = {}, pidTeam = {};
+    Object.keys(T.defaultAssign).forEach(k => { const label = k.split(':')[1]; slotPid[label] = T.defaultAssign[k]; pidTeam[T.defaultAssign[k]] = k.split(':')[0]; });
+
+    const stat = {};
+    players.forEach(p => stat[p.id] = { wins: 0, losses: 0, games: 0, gf: 0, ga: 0, bySport: {} });
+    const team = { A: { wins: 0, losses: 0, games: 0, gf: 0, ga: 0 }, B: { wins: 0, losses: 0, games: 0, gf: 0, ga: 0 } };
+
+    T.sports.forEach(sp => sp.matches.forEach((m, i) => {
+      const sc = scores[sp.id + '#' + i];
+      if (!sc || sc.a === null || sc.b === null || sc.a === undefined || sc.b === undefined) return;
+      const a = sc.a, b = sc.b;
+      const aWin = a > b, bWin = b > a;
+      m.a.forEach(l => { const pid = slotPid[l]; if (!pid) return; const s = stat[pid]; s.games++; s.gf += a; s.ga += b; if (aWin) { s.wins++; s.bySport[sp.id] = (s.bySport[sp.id] || 0) + 1; } else if (bWin) s.losses++; });
+      m.b.forEach(l => { const pid = slotPid[l]; if (!pid) return; const s = stat[pid]; s.games++; s.gf += b; s.ga += a; if (bWin) { s.wins++; s.bySport[sp.id] = (s.bySport[sp.id] || 0) + 1; } else if (aWin) s.losses++; });
+      team.A.games++; team.A.gf += a; team.A.ga += b; if (aWin) team.A.wins++; else if (bWin) team.A.losses++;
+      team.B.games++; team.B.gf += b; team.B.ga += a; if (bWin) team.B.wins++; else if (aWin) team.B.losses++;
+    }));
+    return { stat, team, byId, players, pidTeam };
+  }
+
+  rankSort(a, b) {
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    const da = a.gf - a.ga, db = b.gf - b.ga;
+    if (db !== da) return db - da;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return (a.name || '').localeCompare(b.name || '', 'ru');
+  }
+
+  renderVals() {
+    const T = this.T();
+    if (!T) return { online: false, teams: [], players: [] };
+    const { stat, team, byId, players, pidTeam } = this.compute();
+
+    const teamMeta = {};
+    (T.teams || []).forEach(t => teamMeta[t.id] = t);
+    const fmtDiff = (n) => (n > 0 ? '+' + n : '' + n);
+    const diffColor = (n) => n > 0 ? 'oklch(0.55 0.14 145)' : n < 0 ? 'oklch(0.55 0.18 25)' : 'rgba(51,41,28,.5)';
+
+    // team standings
+    const tList = ['A', 'B'].map(id => {
+      const s = team[id], t = teamMeta[id] || {};
+      return { id, s, meta: t, diff: s.gf - s.ga };
+    }).sort(this.rankSort.bind(this));
+    // determine places (ties share place)
+    let tPrevKey = null, tPrevPlace = 0;
+    const teams = tList.map((row, idx) => {
+      const t = row.meta, s = row.s, diff = row.diff;
+      const key = s.wins + '|' + diff + '|' + s.gf;
+      let place;
+      if (key === tPrevKey && s.games > 0) place = tPrevPlace; else { place = idx + 1; tPrevPlace = place; tPrevKey = key; }
+      return {
+        name: t.name || row.id, img: t.img || '',
+        head: t.headB || '#eee', square: t.square || '#fff',
+        nameColor: t.headText || '#33291C', subColor: t.headText ? t.headText : 'rgba(51,41,28,.6)',
+        border: t.color || 'rgba(51,41,28,.15)',
+        record: s.games + ' игр · ' + s.wins + ' побед · ' + s.losses + ' поражений',
+        wins: s.wins, gf: s.gf, ga: s.ga,
+        diffLabel: fmtDiff(diff), diffColor: diffColor(diff),
+        placeMark: s.games ? (place === 1 ? '🏆' : '🥈') : '—',
+        placeColor: t.color || '#33291C'
+      };
+    });
+
+    // personal standings
+    const rows = players.map(p => {
+      const s = stat[p.id];
+      return { p, s, diff: s.gf - s.ga, wins: s.wins, gf: s.gf, ga: s.ga, name: p.name };
+    }).sort((x, y) => this.rankSort(x, y));
+
+    const anyPlayed = players.some(p => stat[p.id].games > 0);
+    const sportMeta = {}; (T.sports || []).forEach(sp => sportMeta[sp.id] = sp);
+    let rPrevKey = null, rPrevPlace = 0;
+    const plist = rows.map((row, idx) => {
+      const p = row.p, s = row.s, diff = row.diff;
+      const key = s.wins + '|' + diff + '|' + s.gf;
+      let place;
+      if (anyPlayed && s.games > 0 && key === rPrevKey) place = rPrevPlace;
+      else { place = idx + 1; rPrevPlace = place; rPrevKey = (anyPlayed && s.games > 0) ? key : ('x' + idx); }
+      const sportWins = (T.sports || []).filter(sp => s.bySport[sp.id]).map(sp => ({ icon: sp.icon, n: s.bySport[sp.id] }));
+      const hue = this.hue(p, players);
+      const tid = pidTeam[p.id];
+      const tMeta = teamMeta[tid] || {};
+      const medal = anyPlayed && s.games > 0 ? (place === 1 ? '🏆' : place === 2 ? '🥈' : place === 3 ? '🥉' : '') : '';
+      const rowBg = anyPlayed && s.games > 0 ? (place === 1 ? 'oklch(0.97 0.045 90)' : place === 2 ? 'oklch(0.98 0.006 250)' : place === 3 ? 'oklch(0.97 0.03 55)' : 'transparent') : 'transparent';
+      return {
+        place: place, medal: medal, hasMedal: !!medal,
+        placeColor: place === 1 && anyPlayed ? 'oklch(0.6 0.15 50)' : 'rgba(51,41,28,.55)',
+        rowBg: rowBg,
+        name: p.name,
+        color: 'oklch(0.58 0.13 ' + hue + ')', colorSoft: 'oklch(0.86 0.07 ' + hue + ')', hair: p.f ? 1 : 0,
+        teamName: tMeta.name || '', teamColor: tMeta.color || 'rgba(51,41,28,.4)',
+        games: s.games, wins: s.wins, losses: s.losses, gf: s.gf, ga: s.ga,
+        sportWins: sportWins, hasSportWins: sportWins.length > 0,
+        diffLabel: fmtDiff(diff), diffColor: diffColor(diff)
+      };
+    });
+
+    return { online: this.state.online, teams, players: plist };
+  }
+}
+</script>
+</body>
+</html>
